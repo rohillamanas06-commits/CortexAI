@@ -30,16 +30,16 @@ const suggestions = [
 
 export function EmptyChat({ onSuggestionClick }: EmptyChatProps) {
   return (
-    <div className="h-full flex flex-col items-center justify-center p-2 sm:p-6 md:p-8">
+    <div className="h-full flex flex-col items-center justify-center p-1 sm:p-6 md:p-8">
       <div className="text-center max-w-2xl mx-auto w-full">
-        <div className="mb-4 sm:mb-6 flex justify-center">
-          <Logo size="md" showText={false} />
+        <div className="mb-3 sm:mb-6 flex justify-center">
+          <Logo size="sm" showText={false} />
         </div>
         
-        <h2 className="text-xl sm:text-3xl font-bold mb-2 sm:mb-3 px-2">
+        <h2 className="text-lg sm:text-3xl font-bold mb-1.5 sm:mb-3 px-2">
           How can I help you today?
         </h2>
-        <p className="text-muted-foreground text-sm sm:text-lg mb-0 sm:mb-10 px-2">
+        <p className="hidden sm:block text-muted-foreground text-sm sm:text-lg mb-0 sm:mb-10 px-2">
           Start a conversation below
         </p>
 
