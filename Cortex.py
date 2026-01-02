@@ -12,6 +12,8 @@ from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 from functools import wraps
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 # Load environment variables
 load_dotenv()
@@ -22,6 +24,10 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-change-this'
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key-change-this')
 app.config['JWT_EXPIRATION_HOURS'] = int(os.getenv('JWT_EXPIRATION_HOURS', 24))
 CORS(app, supports_credentials=True)  # Enable CORS for all routes with credentials
+
+# SendGrid Configuration
+SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
+SENDGRID_FROM_EMAIL = os.getenv('SENDGRID_FROM_EMAIL')
 
 # Configure Gemini API
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
@@ -72,7 +78,9 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP,
-            is_active BOOLEAN DEFAULT TRUE
+            is_active BOOLEAN DEFAULT TRUE,
+            reset_token TEXT,
+            reset_token_expires TIMESTAMP
         )
     ''')
     
@@ -85,6 +93,19 @@ def init_db():
         conn.commit()
     except Exception as e:
         print(f"Warning updating is_active: {e}")
+        conn.rollback()
+    
+    # Add reset token columns if they don't exist
+    try:
+        cur.execute("""
+            ALTER TABLE users 
+            ADD COLUMN IF NOT EXISTS reset_token TEXT,
+            ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP
+        """)
+        conn.commit()
+        print("✅ Added reset token columns to users table")
+    except Exception as e:
+        print(f"Warning adding reset token columns: {e}")
         conn.rollback()
     
     # Conversations table
@@ -391,6 +412,107 @@ def login():
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/auth/forgot-password', methods=['POST'])
+def forgot_password():
+    """Send password reset email"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'email' not in data:
+            return jsonify({"error": "Email is required"}), 400
+        
+        email = data['email'].lower().strip()
+        
+        # Check if user exists
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id, username, email, full_name FROM users WHERE LOWER(email) = %s AND is_active = TRUE", (email,))
+        user = cur.fetchone()
+        
+        # Always return success to prevent email enumeration
+        if not user:
+            cur.close()
+            conn.close()
+            return jsonify({"message": "If an account exists with that email, you will receive password reset instructions."}), 200
+        
+        # Generate reset token
+        reset_token = jwt.encode({
+            'user_id': user['id'],
+            'purpose': 'password_reset',
+            'exp': datetime.utcnow() + timedelta(hours=1)  # Token expires in 1 hour
+        }, app.config['JWT_SECRET_KEY'], algorithm="HS256")
+        
+        # Store reset token in database (you may want to create a password_resets table)
+        cur.execute(
+            "UPDATE users SET reset_token = %s, reset_token_expires = %s WHERE id = %s",
+            (reset_token, datetime.utcnow() + timedelta(hours=1), user['id'])
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        # Send email via SendGrid
+        reset_link = f"http://localhost:5173/reset-password?token={reset_token}"
+        
+        print(f"📧 Preparing to send email to: {email}")
+        print(f"📧 From email: {SENDGRID_FROM_EMAIL}")
+        print(f"📧 Reset link: {reset_link}")
+        
+        message = Mail(
+            from_email=SENDGRID_FROM_EMAIL,
+            to_emails=email,
+            subject='Reset Your Cortex AI Password',
+            html_content=f'''
+            <html>
+              <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                  <h2 style="color: #2563eb;">Password Reset Request</h2>
+                  <p>Hello {user['full_name'] or user['username']},</p>
+                  <p>We received a request to reset your password for your Cortex AI account.</p>
+                  <p>Click the button below to reset your password:</p>
+                  <div style="text-align: center; margin: 30px 0;">
+                    <a href="{reset_link}" 
+                       style="background-color: #2563eb; color: white; padding: 12px 30px; 
+                              text-decoration: none; border-radius: 5px; display: inline-block;">
+                      Reset Password
+                    </a>
+                  </div>
+                  <p>Or copy and paste this link into your browser:</p>
+                  <p style="background-color: #f3f4f6; padding: 10px; border-radius: 5px; word-break: break-all;">
+                    {reset_link}
+                  </p>
+                  <p style="color: #ef4444; font-weight: bold;">This link will expire in 1 hour.</p>
+                  <p>If you didn't request a password reset, you can safely ignore this email.</p>
+                  <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+                  <p style="color: #6b7280; font-size: 12px;">
+                    This is an automated email from Cortex AI. Please do not reply to this email.
+                  </p>
+                </div>
+              </body>
+            </html>
+            '''
+        )
+        
+        try:
+            sg = SendGridAPIClient(SENDGRID_API_KEY)
+            response = sg.send(message)
+            print(f"✅ Password reset email sent to {email}, status code: {response.status_code}")
+            print(f"📧 SendGrid Response Body: {response.body}")
+            print(f"📧 SendGrid Response Headers: {response.headers}")
+        except Exception as email_error:
+            print(f"❌ Failed to send email: {str(email_error)}")
+            print(f"❌ Error type: {type(email_error).__name__}")
+            import traceback
+            print(f"❌ Full traceback: {traceback.format_exc()}")
+            return jsonify({"error": f"Failed to send reset email: {str(email_error)}"}), 500
+        
+        return jsonify({"message": "If an account exists with that email, you will receive password reset instructions."}), 200
+        
+    except Exception as e:
+        print(f"❌ Forgot password error: {str(e)}")
+        return jsonify({"error": "An error occurred. Please try again later."}), 500
 
 
 @app.route('/auth/logout', methods=['POST'])
@@ -847,6 +969,57 @@ def get_models():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/api/feedback', methods=['POST'])
+def send_feedback():
+    """Send feedback via SendGrid"""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data.get('name') or not data.get('email') or not data.get('message'):
+            return jsonify({"error": "Name, email, and message are required"}), 400
+        
+        name = data.get('name')
+        email = data.get('email')
+        message = data.get('message')
+        
+        # Create email content
+        email_content = f"""
+        <h2>New Feedback from CortexAI</h2>
+        <p><strong>From:</strong> {name} ({email})</p>
+        <p><strong>Message:</strong></p>
+        <p>{message.replace(chr(10), '<br>')}</p>
+        <hr>
+        <p><small>This feedback was sent via CortexAI feedback form.</small></p>
+        """
+        
+        # Create SendGrid message
+        message_obj = Mail(
+            from_email=SENDGRID_FROM_EMAIL,
+            to_emails=SENDGRID_FROM_EMAIL,  # Send to yourself
+            subject=f'CortexAI Feedback from {name}',
+            html_content=email_content
+        )
+        
+        # Also set reply-to as the sender's email
+        message_obj.reply_to = email
+        
+        # Send email
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        response = sg.send(message_obj)
+        
+        print(f"✅ Feedback email sent successfully (status: {response.status_code})")
+        
+        return jsonify({
+            "message": "Feedback sent successfully!",
+            "status": "success"
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Error sending feedback: {str(e)}")
+        return jsonify({"error": f"Failed to send feedback: {str(e)}"}), 500
+
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
@@ -906,6 +1079,7 @@ if __name__ == '__main__':
     
     Other:
     • GET    /health                - Health check
+    • POST   /api/feedback          - Send feedback via email
     
     Press Ctrl+C to stop the server
     """)

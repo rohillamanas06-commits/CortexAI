@@ -7,3 +7,4 @@ psycopg2-binary==2.9.9
 PyJWT==2.8.0
 pyttsx3==2.90
 requests==2.31.0
+sendgrid==6.11.0

@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
 import { 
   ArrowLeft, 
   MessageSquare, 
@@ -20,11 +23,51 @@ import {
   Lock,
   Cpu,
   Globe,
-  Users
+  Users,
+  Github,
+  Instagram,
+  Linkedin,
+  Mail,
+  Send
 } from 'lucide-react';
+import { useState } from 'react';
 
 export default function LearnMore() {
   const navigate = useNavigate();
+  const [feedbackForm, setFeedbackForm] = useState({
+    name: '',
+    email: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleFeedbackSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/feedback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(feedbackForm),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Feedback sent successfully! Thank you for your input.');
+        setFeedbackForm({ name: '', email: '', message: '' });
+      } else {
+        toast.error(data.error || 'Failed to send feedback. Please try again.');
+      }
+    } catch (error) {
+      toast.error('Network error. Please check your connection and try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -234,6 +277,167 @@ export default function LearnMore() {
               </div>
             </CardContent>
           </Card>
+        </section>
+
+        {/* Developer & Feedback Section */}
+        <section className="mb-16 animate-slide-up" style={{ animationDelay: '0.4s' }}>
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Meet the Developer */}
+            <Card className="glass">
+              <CardHeader>
+                <CardTitle className="text-2xl">Meet the Developer</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Profile Image */}
+                <div className="flex justify-center">
+                  <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-primary/20 shadow-xl">
+                    <img 
+                      src="/founder.Jpg" 
+                      alt="Manas Rohilla" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+
+                {/* Name and Title */}
+                <div className="text-center space-y-2">
+                  <h3 className="text-2xl font-bold">Manas</h3>
+                  <p className="text-lg text-primary">Founder and Developer</p>
+                  <p className="text-muted-foreground italic">
+                    Dedicated to leveraging Artificial Intelligence to solve real-world problems.
+                  </p>
+                </div>
+
+                <Separator />
+
+                {/* Social Links */}
+                <div className="space-y-3">
+                  <p className="text-center text-sm text-muted-foreground">Connect with me</p>
+                  <div className="flex justify-center gap-4 flex-wrap">
+                    <a
+                      href="https://github.com/rohillamanas06-commits"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
+                        <Github className="w-6 h-6 text-white" />
+                      </div>
+                    </a>
+                    
+                    <a
+                      href="https://www.instagram.com/manas_rohilla_/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
+                        <Instagram className="w-6 h-6 text-white" />
+                      </div>
+                    </a>
+                    
+                    <a
+                      href="https://www.linkedin.com/in/manas-rohilla-b73415338/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
+                        <Linkedin className="w-6 h-6 text-white" />
+                      </div>
+                    </a>
+                    
+                    <a
+                      href="https://peerlist.io/rohillamanas06"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
+                        <Users className="w-6 h-6 text-white" />
+                      </div>
+                    </a>
+                    
+                    <a
+                      href="mailto:rohillamanas06@gmail.com"
+                      className="group"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
+                        <Mail className="w-6 h-6 text-white" />
+                      </div>
+                    </a>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Send Feedback */}
+            <Card className="glass">
+              <CardHeader>
+                <CardTitle className="text-2xl">Send Feedback</CardTitle>
+                <CardDescription>
+                  Have suggestions or feedback? I'd love to hear from you!
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleFeedbackSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="name" className="text-sm font-medium">
+                      Name
+                    </label>
+                    <Input
+                      id="name"
+                      placeholder="Your name"
+                      value={feedbackForm.name}
+                      onChange={(e) => setFeedbackForm({ ...feedbackForm, name: e.target.value })}
+                      required
+                      disabled={isSubmitting}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-medium">
+                      Email
+                    </label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="your.email@example.com"
+                      value={feedbackForm.email}
+                      onChange={(e) => setFeedbackForm({ ...feedbackForm, email: e.target.value })}
+                      required
+                      disabled={isSubmitting}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="message" className="text-sm font-medium">
+                      Message
+                    </label>
+                    <Textarea
+                      id="message"
+                      placeholder="Share your thoughts, suggestions, or feedback..."
+                      value={feedbackForm.message}
+                      onChange={(e) => setFeedbackForm({ ...feedbackForm, message: e.target.value })}
+                      required
+                      disabled={isSubmitting}
+                      rows={6}
+                      className="resize-none"
+                    />
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={isSubmitting}
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    {isSubmitting ? 'Sending...' : 'Send Feedback'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
         </section>
       </main>
 

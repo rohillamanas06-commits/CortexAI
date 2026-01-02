@@ -149,6 +149,16 @@ export default function Auth() {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+                {mode === 'login' && (
+                  <div className="mt-2 text-right">
+                    <a
+                      href="/forgot-password"
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Forgot password?
+                    </a>
+                  </div>
+                )}
               </div>
 
               {error && (
