@@ -46,7 +46,7 @@ export function ChatSidebar({
     <aside
       className={cn(
         "h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300",
-        isCollapsed ? "w-16" : "w-56 sm:w-72"
+        isCollapsed ? "w-16" : "w-72"
       )}
     >
       {/* Header */}
@@ -100,7 +100,7 @@ export function ChatSidebar({
             onMouseEnter={() => setHoveredId(conv.id)}
             onMouseLeave={() => setHoveredId(null)}
             className={cn(
-              "w-full flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg transition-all duration-200 group cursor-pointer",
+              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group cursor-pointer",
               activeConversationId === conv.id
                 ? "bg-sidebar-accent text-sidebar-accent-foreground"
                 : "text-sidebar-foreground hover:bg-sidebar-accent/50",
@@ -111,7 +111,7 @@ export function ChatSidebar({
             <MessageSquare className="w-4 h-4 shrink-0" />
             {!isCollapsed && (
               <>
-                <span className="flex-1 text-left text-xs sm:text-sm truncate">
+                <span className="flex-1 text-left text-sm truncate">
                   {conv.title}
                 </span>
                 {hoveredId === conv.id && (
@@ -138,16 +138,16 @@ export function ChatSidebar({
       <div className="border-t border-sidebar-border p-2 space-y-1.5 shrink-0">
         {/* User info */}
         <div className={cn(
-          "flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-sidebar-accent/50",
+          "flex items-center gap-3 px-3 py-2 rounded-lg bg-sidebar-accent/50",
           isCollapsed && "justify-center px-0"
-        )}>
+        )}>>
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
             <User className="w-4 h-4 text-primary-foreground" />
           </div>
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-xs sm:text-sm font-medium truncate">{user?.fullName || user?.username}</p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{user?.email}</p>
+              <p className="text-sm font-medium truncate">{user?.fullName || user?.username}</p>
+              <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
             </div>
           )}
         </div>
