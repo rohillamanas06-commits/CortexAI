@@ -60,7 +60,7 @@ export default function Auth() {
 
       {/* Header */}
       <header className="relative z-10 flex items-center justify-between p-6">
-        <Logo size="md" />
+        <Logo size="md" clickable />
         <ThemeSwitcher />
       </header>
 

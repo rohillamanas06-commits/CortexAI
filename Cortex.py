@@ -1,5 +1,6 @@
 import os
 import json
+import requests
 from flask import Flask, request, jsonify, Response, stream_with_context, session
 from flask_cors import CORS
 import google.generativeai as genai
@@ -503,6 +504,7 @@ def home():
             "/conversations/<id>": "GET - Get specific conversation (Protected)",
             "/conversations/<id>": "DELETE - Delete a conversation (Protected)",
             "/conversations/new": "POST - Start new conversation (Protected)",
+            "/conversations/<id>/clear": "POST - Clear conversation history (Protected)",
             "/models": "GET - List available models"
         }
 
@@ -899,6 +901,8 @@ if __name__ == '__main__':
     • DELETE /conversations/:id     - Delete conversation
     • POST   /conversations/:id/clear - Clear conversation
     • GET    /models                - List available models
+    
+    Other:
     • GET    /health                - Health check
     
     Press Ctrl+C to stop the server

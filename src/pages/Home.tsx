@@ -1,32 +1,17 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Logo } from '@/components/Logo';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { AnimatedBackground } from '@/components/AnimatedBackground';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Sparkles, Zap, Shield, MessageSquare } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ArrowRight, Sparkles, Info } from 'lucide-react';
 
 export default function Home() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-
-  const features = [
-    {
-      icon: Zap,
-      title: 'Lightning Fast',
-      description: 'Get instant responses powered by advanced AI technology',
-    },
-    {
-      icon: Shield,
-      title: 'Secure & Private',
-      description: 'Your conversations are encrypted and never shared',
-    },
-    {
-      icon: MessageSquare,
-      title: 'Natural Dialogue',
-      description: 'Have fluid conversations that feel human-like',
-    },
-  ];
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -60,8 +45,9 @@ export default function Home() {
 
           {/* Subheading */}
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-            Experience the future of conversation. Cortex understands context, 
-            remembers your preferences, and delivers insightful responses instantly.
+            Experience the future of conversation with AI that truly understands you. 
+            Get instant, accurate responses powered by cutting-edge technology. 
+            Transform the way you work, learn, and create.
           </p>
 
           {/* CTA Buttons */}
@@ -77,33 +63,10 @@ export default function Home() {
             <Button
               variant="glass"
               size="xl"
-              onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={() => navigate(isAuthenticated ? '/chat' : '/auth')}
             >
               Learn More
             </Button>
-          </div>
-        </div>
-
-        {/* Features */}
-        <div id="features" className="mt-32 w-full max-w-5xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12 animate-slide-up">
-            Why Choose <span className="gradient-text">Cortex</span>?
-          </h2>
-          
-          <div className="grid md:grid-cols-3 gap-6">
-            {features.map((feature, index) => (
-              <div
-                key={feature.title}
-                className="glass rounded-2xl p-6 hover:border-primary/50 transition-all duration-300 hover:glow-subtle animate-slide-up"
-                style={{ animationDelay: `${0.4 + index * 0.1}s` }}
-              >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-primary-foreground" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground">{feature.description}</p>
-              </div>
-            ))}
           </div>
         </div>
       </main>
@@ -112,9 +75,65 @@ export default function Home() {
       <footer className="relative z-10 border-t border-border py-6">
         <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <Logo size="sm" />
-          <p className="text-sm text-muted-foreground">
-            © 2024 Cortex AI. All rights reserved.
-          </p>
+          <Dialog open={aboutOpen} onOpenChange={setAboutOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="gap-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Info className="w-4 h-4" />
+                About Cortex
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3 text-2xl">
+                  <Logo size="sm" showText={false} />
+                  Cortex AI
+                </DialogTitle>
+                <DialogDescription className="text-base pt-4 space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-2">About the Project</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Cortex AI is an intelligent conversational assistant powered by Google's Gemini 2.5 Flash model. 
+                      Built with modern web technologies to provide a seamless, secure, and intuitive chat experience.
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-2">Key Features</h3>
+                    <ul className="text-muted-foreground space-y-2 list-none">
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-0.5">✓</span>
+                        <span>Real-time AI-powered conversations</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-0.5">✓</span>
+                        <span>Voice input with speech recognition</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-0.5">✓</span>
+                        <span>Text-to-speech for AI responses</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-0.5">✓</span>
+                        <span>Multiple theme options</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-0.5">✓</span>
+                        <span>Secure user authentication</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-0.5">✓</span>
+                        <span>Conversation history management</span>
+                      </li>
+                    </ul>
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+            </DialogContent>
+          </Dialog>
         </div>
       </footer>
     </div>

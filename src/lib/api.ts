@@ -381,6 +381,31 @@ export const modelsAPI = {
   },
 };
 
+// ============= IMAGE GENERATION API =============
+
+export interface ImageGenerationResponse {
+  success: boolean;
+  image: string; // Base64 encoded image
+  prompt: string;
+}
+
+export const imageAPI = {
+  async generateImage(prompt: string): Promise<ImageGenerationResponse> {
+    const response = await authenticatedFetch('/generate-image', {
+      method: 'POST',
+      body: JSON.stringify({ prompt }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to generate image');
+    }
+
+    return data;
+  },
+};
+
 // ============= HEALTH CHECK =============
 
 export const healthAPI = {

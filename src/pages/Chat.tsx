@@ -8,7 +8,7 @@ import { EmptyChat } from '@/components/chat/EmptyChat';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { chatAPI } from '@/lib/api';
+import { chatAPI, imageAPI } from '@/lib/api';
 
 interface Message {
   id: string;
@@ -25,7 +25,10 @@ interface Conversation {
 
 export default function Chat() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>(() => {
+    const saved = localStorage.getItem('cortex-conversations');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
@@ -35,6 +38,11 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const activeConversation = conversations.find(c => c.id === activeConversationId);
+
+  // Save conversations to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('cortex-conversations', JSON.stringify(conversations));
+  }, [conversations]);
 
   // Don't load conversations from backend - they're stored locally
   // Backend stores them in memory which gets lost on restart
@@ -159,54 +167,55 @@ export default function Chat() {
   };
 
   const handleSendMessage = async (content: string) => {
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content,
-    };
-
-    let conversationId = activeConversationId;
-    
-    // Create new conversation if needed
-    if (!conversationId) {
-      conversationId = Date.now().toString();
-      const newConversation: Conversation = {
-        id: conversationId,
-        title: content.slice(0, 40) + (content.length > 40 ? '...' : ''),
-        messages: [userMessage],
-        createdAt: new Date(),
-      };
-      setConversations(prev => [newConversation, ...prev]);
-      setActiveConversationId(conversationId);
-    } else {
-      setConversations(prev =>
-        prev.map(c =>
-          c.id === conversationId
-            ? { ...c, messages: [...c.messages, userMessage] }
-            : c
-        )
-      );
-    }
-
-    setIsLoading(true);
-    setStreamingContent('');
-    
     try {
-      // Stream the response from the backend
-      await chatAPI.streamMessage(
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        role: 'user',
+        content,
+      };
+
+      let conversationId = activeConversationId;
+      
+      // Create new conversation if needed
+      if (!conversationId) {
+        conversationId = Date.now().toString();
+        const newConversation: Conversation = {
+          id: conversationId,
+          title: content.slice(0, 40) + (content.length > 40 ? '...' : ''),
+          messages: [userMessage],
+          createdAt: new Date(),
+        };
+        setConversations(prev => [newConversation, ...prev]);
+        setActiveConversationId(conversationId);
+      } else {
+        setConversations(prev =>
+          prev.map(c =>
+            c.id === conversationId
+              ? { ...c, messages: [...c.messages, userMessage] }
+              : c
+          )
+        );
+      }
+
+      setIsLoading(true);
+      setStreamingContent('');
+      
+      // Send chat message with streaming
+      let fullResponse = '';
+
+      chatAPI.streamMessage(
         content,
         conversationId,
         undefined,
-        // onChunk callback - update streaming content
         (chunk: string) => {
-          setStreamingContent(prev => prev + chunk);
+          fullResponse += chunk;
+          setStreamingContent(fullResponse);
         },
-        // onComplete callback - finalize the assistant message
-        (fullResponse: string) => {
+        (response: string) => {
           const assistantMessage: Message = {
             id: (Date.now() + 1).toString(),
             role: 'assistant',
-            content: fullResponse,
+            content: response,
           };
 
           setConversations(prev =>
@@ -216,26 +225,18 @@ export default function Chat() {
                 : c
             )
           );
-          
+
           setStreamingContent('');
           setIsLoading(false);
-          
-          // Don't reload conversations - it will overwrite local messages
-          // loadConversations();
         },
-        // onError callback
         (error: string) => {
-          console.error('Streaming error:', error);
-          setIsLoading(false);
-          setStreamingContent('');
-          
-          // Add error message
+          console.error('Chat error:', error);
           const errorMessage: Message = {
             id: (Date.now() + 1).toString(),
             role: 'assistant',
-            content: `Sorry, there was an error: ${error}`,
+            content: `Sorry, I encountered an error: ${error}`,
           };
-          
+
           setConversations(prev =>
             prev.map(c =>
               c.id === conversationId
@@ -243,8 +244,12 @@ export default function Chat() {
                 : c
             )
           );
+
+          setStreamingContent('');
+          setIsLoading(false);
         }
       );
+
     } catch (error) {
       console.error('Error sending message:', error);
       setIsLoading(false);

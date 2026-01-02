@@ -19,7 +19,9 @@ export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
       window.speechSynthesis.cancel();
       
       if (!isSpeaking) {
-        const utterance = new SpeechSynthesisUtterance(content);
+        // Remove image markdown before speaking
+        const textContent = content.replace(/!\[.*?\]\(.*?\)/g, '');
+        const utterance = new SpeechSynthesisUtterance(textContent);
         utterance.rate = 0.9;
         utterance.pitch = 1;
         utterance.volume = 1;
@@ -33,6 +35,61 @@ export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
         setIsSpeaking(false);
       }
     }
+  };
+
+  // Parse markdown images and text
+  const renderContent = () => {
+    const imageRegex = /!\[(.*?)\]\((.*?)\)/g;
+    const parts: JSX.Element[] = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = imageRegex.exec(content)) !== null) {
+      // Add text before image
+      if (match.index > lastIndex) {
+        const text = content.slice(lastIndex, match.index);
+        parts.push(
+          <p key={`text-${lastIndex}`} className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
+            {text}
+          </p>
+        );
+      }
+
+      // Add image
+      const [, alt, src] = match;
+      parts.push(
+        <img
+          key={`img-${match.index}`}
+          src={src}
+          alt={alt}
+          className="rounded-lg max-w-full h-auto my-4 border border-border"
+        />
+      );
+
+      lastIndex = imageRegex.lastIndex;
+    }
+
+    // Add remaining text
+    if (lastIndex < content.length) {
+      const text = content.slice(lastIndex);
+      parts.push(
+        <p key={`text-${lastIndex}`} className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
+          {text}
+          {isStreaming && (
+            <span className="inline-block w-2 h-5 ml-1 bg-primary animate-pulse rounded-sm" />
+          )}
+        </p>
+      );
+    }
+
+    return parts.length > 0 ? parts : (
+      <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
+        {content}
+        {isStreaming && (
+          <span className="inline-block w-2 h-5 ml-1 bg-primary animate-pulse rounded-sm" />
+        )}
+      </p>
+    );
   };
 
   return (
@@ -80,12 +137,7 @@ export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
           )}
         </div>
         <div className="prose prose-invert max-w-none">
-          <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
-            {content}
-            {isStreaming && (
-              <span className="inline-block w-2 h-5 ml-1 bg-primary animate-pulse rounded-sm" />
-            )}
-          </p>
+          {renderContent()}
         </div>
       </div>
     </div>
