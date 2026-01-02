@@ -301,7 +301,7 @@ export default function LearnMore() {
 
                 {/* Name and Title */}
                 <div className="text-center space-y-2">
-                  <h3 className="text-2xl font-bold">Manas</h3>
+                  <h3 className="text-2xl font-bold">Manas Rohilla</h3>
                   <p className="text-lg text-primary">Founder and Developer</p>
                   <p className="text-muted-foreground font-sans text-base">
                     Dedicated to leveraging Artificial Intelligence to solve real-world problems.
