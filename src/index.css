@@ -1,0 +1,289 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Obsidian Theme (Default) */
+  :root {
+    --background: 220 20% 6%;
+    --foreground: 210 40% 98%;
+
+    --card: 220 20% 8%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 220 20% 10%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 100% 60%;
+    --primary-foreground: 220 20% 6%;
+
+    --secondary: 220 15% 15%;
+    --secondary-foreground: 210 40% 90%;
+
+    --muted: 220 15% 12%;
+    --muted-foreground: 215 20% 55%;
+
+    --accent: 210 100% 50%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 15% 18%;
+    --input: 220 15% 15%;
+    --ring: 210 100% 60%;
+
+    --radius: 0.75rem;
+
+    /* Custom tokens */
+    --glow-primary: 210 100% 60%;
+    --glow-secondary: 200 100% 50%;
+    --gradient-start: 210 100% 60%;
+    --gradient-end: 200 100% 50%;
+    --surface-glass: 220 20% 10%;
+    --surface-elevated: 220 20% 12%;
+
+    /* Sidebar */
+    --sidebar-background: 220 20% 5%;
+    --sidebar-foreground: 210 40% 90%;
+    --sidebar-primary: 210 100% 60%;
+    --sidebar-primary-foreground: 220 20% 6%;
+    --sidebar-accent: 220 15% 12%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 220 15% 15%;
+    --sidebar-ring: 210 100% 60%;
+  }
+
+  /* Emerald Theme */
+  .theme-emerald {
+    --background: 160 30% 4%;
+    --foreground: 160 20% 95%;
+
+    --card: 160 30% 6%;
+    --card-foreground: 160 20% 95%;
+
+    --popover: 160 30% 8%;
+    --popover-foreground: 160 20% 95%;
+
+    --primary: 160 100% 45%;
+    --primary-foreground: 160 30% 4%;
+
+    --secondary: 160 20% 12%;
+    --secondary-foreground: 160 20% 90%;
+
+    --muted: 160 20% 10%;
+    --muted-foreground: 160 15% 50%;
+
+    --accent: 170 100% 40%;
+    --accent-foreground: 160 20% 95%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 160 20% 95%;
+
+    --border: 160 20% 15%;
+    --input: 160 20% 12%;
+    --ring: 160 100% 45%;
+
+    --glow-primary: 160 100% 45%;
+    --glow-secondary: 170 100% 40%;
+    --gradient-start: 160 100% 45%;
+    --gradient-end: 170 100% 35%;
+    --surface-glass: 160 30% 8%;
+    --surface-elevated: 160 30% 10%;
+
+    --sidebar-background: 160 30% 3%;
+    --sidebar-foreground: 160 20% 90%;
+    --sidebar-primary: 160 100% 45%;
+    --sidebar-primary-foreground: 160 30% 4%;
+    --sidebar-accent: 160 20% 10%;
+    --sidebar-accent-foreground: 160 20% 95%;
+    --sidebar-border: 160 20% 12%;
+    --sidebar-ring: 160 100% 45%;
+  }
+
+  /* Amethyst Theme */
+  .theme-amethyst {
+    --background: 270 30% 5%;
+    --foreground: 270 20% 95%;
+
+    --card: 270 30% 7%;
+    --card-foreground: 270 20% 95%;
+
+    --popover: 270 30% 9%;
+    --popover-foreground: 270 20% 95%;
+
+    --primary: 270 100% 65%;
+    --primary-foreground: 270 30% 5%;
+
+    --secondary: 270 20% 13%;
+    --secondary-foreground: 270 20% 90%;
+
+    --muted: 270 20% 11%;
+    --muted-foreground: 270 15% 50%;
+
+    --accent: 280 100% 60%;
+    --accent-foreground: 270 20% 95%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 270 20% 95%;
+
+    --border: 270 20% 16%;
+    --input: 270 20% 13%;
+    --ring: 270 100% 65%;
+
+    --glow-primary: 270 100% 65%;
+    --glow-secondary: 290 100% 60%;
+    --gradient-start: 270 100% 65%;
+    --gradient-end: 290 100% 55%;
+    --surface-glass: 270 30% 9%;
+    --surface-elevated: 270 30% 11%;
+
+    --sidebar-background: 270 30% 4%;
+    --sidebar-foreground: 270 20% 90%;
+    --sidebar-primary: 270 100% 65%;
+    --sidebar-primary-foreground: 270 30% 5%;
+    --sidebar-accent: 270 20% 11%;
+    --sidebar-accent-foreground: 270 20% 95%;
+    --sidebar-border: 270 20% 13%;
+    --sidebar-ring: 270 100% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-family: 'Outfit', sans-serif;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  code, pre {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-surface-glass/60 backdrop-blur-xl border border-border/50;
+  }
+
+  .glass-strong {
+    @apply bg-surface-glass/80 backdrop-blur-2xl border border-border/60;
+  }
+
+  .glow-primary {
+    box-shadow: 0 0 30px hsl(var(--glow-primary) / 0.3),
+                0 0 60px hsl(var(--glow-primary) / 0.15);
+  }
+
+  .glow-subtle {
+    box-shadow: 0 0 20px hsl(var(--glow-primary) / 0.15);
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
+  }
+
+  .gradient-bg {
+    @apply bg-gradient-to-br from-primary/20 via-transparent to-accent/20;
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.5s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted));
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { 
+    box-shadow: 0 0 20px hsl(var(--glow-primary) / 0.3);
+  }
+  50% { 
+    box-shadow: 0 0 40px hsl(var(--glow-primary) / 0.5),
+                0 0 60px hsl(var(--glow-primary) / 0.3);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Custom scrollbar for chat */
+.chat-scroll {
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.chat-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+}
+
+.chat-scroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}

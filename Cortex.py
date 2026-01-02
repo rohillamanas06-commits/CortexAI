@@ -1,0 +1,907 @@
+import os
+import json
+from flask import Flask, request, jsonify, Response, stream_with_context, session
+from flask_cors import CORS
+import google.generativeai as genai
+from dotenv import load_dotenv
+from datetime import datetime, timedelta
+import uuid
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from werkzeug.security import generate_password_hash, check_password_hash
+import jwt
+from functools import wraps
+
+# Load environment variables
+load_dotenv()
+
+# Initialize Flask app
+app = Flask(__name__)
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-change-this')
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key-change-this')
+app.config['JWT_EXPIRATION_HOURS'] = int(os.getenv('JWT_EXPIRATION_HOURS', 24))
+CORS(app, supports_credentials=True)  # Enable CORS for all routes with credentials
+
+# Configure Gemini API
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY not found in environment variables")
+
+genai.configure(api_key=GEMINI_API_KEY)
+
+# PostgreSQL Database Configuration
+DATABASE_URL = os.getenv('DATABASE_URL')
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL not found in environment variables")
+
+
+# Database connection function
+def get_db_connection():
+    """Create and return a database connection"""
+    try:
+        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+        return conn
+    except Exception as e:
+        print(f"Database connection error: {e}")
+        raise
+
+
+# Initialize database tables
+def init_db():
+    """Initialize database tables"""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Drop and recreate user_sessions table to fix schema issues
+    try:
+        cur.execute('DROP TABLE IF EXISTS user_sessions CASCADE')
+        conn.commit()
+    except Exception as e:
+        print(f"Warning dropping user_sessions: {e}")
+        conn.rollback()
+    
+    # Users table
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(50) UNIQUE NOT NULL,
+            email VARCHAR(100) UNIQUE NOT NULL,
+            password_hash VARCHAR(255) NOT NULL,
+            full_name VARCHAR(100),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_login TIMESTAMP,
+            is_active BOOLEAN DEFAULT TRUE
+        )
+    ''')
+    
+    # Fix existing users with NULL is_active
+    try:
+        cur.execute("UPDATE users SET is_active = TRUE WHERE is_active IS NULL")
+        updated_count = cur.rowcount
+        if updated_count > 0:
+            print(f"✅ Fixed {updated_count} users with NULL is_active")
+        conn.commit()
+    except Exception as e:
+        print(f"Warning updating is_active: {e}")
+        conn.rollback()
+    
+    # Conversations table
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS conversations (
+            id UUID PRIMARY KEY,
+            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            title VARCHAR(200) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # Messages table
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS messages (
+            id SERIAL PRIMARY KEY,
+            conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
+            role VARCHAR(20) NOT NULL,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # Sessions table (recreated with correct schema)
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS user_sessions (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            token TEXT UNIQUE NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMP NOT NULL,
+            is_active BOOLEAN DEFAULT TRUE
+        )
+    ''')
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    print("✅ Database tables initialized successfully")
+
+
+# JWT Token decorator
+def token_required(f):
+    """Decorator to protect routes with JWT authentication"""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        
+        # Get token from header
+        if 'Authorization' in request.headers:
+            auth_header = request.headers['Authorization']
+            try:
+                token = auth_header.split(" ")[1]  # Bearer <token>
+            except IndexError:
+                print("❌ Token validation failed: Invalid token format")
+                return jsonify({"error": "Invalid token format"}), 401
+        
+        if not token:
+            print("❌ Token validation failed: Token is missing")
+            return jsonify({"error": "Token is missing"}), 401
+        
+        try:
+            # Decode token
+            data = jwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
+            print(f"🔑 Token decoded successfully for user_id: {data.get('user_id')}")
+            
+            # Get user from database
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM users WHERE id = %s AND (is_active = TRUE OR is_active IS NULL)", (data['user_id'],))
+            current_user = cur.fetchone()
+            
+            if not current_user:
+                print(f"❌ Token validation failed: User ID {data['user_id']} not found in database")
+                # Check if user exists at all
+                cur.execute("SELECT id, is_active FROM users WHERE id = %s", (data['user_id'],))
+                any_user = cur.fetchone()
+                if any_user:
+                    print(f"⚠️ User exists but is_active = {any_user['is_active']}")
+                else:
+                    print(f"⚠️ User ID {data['user_id']} does not exist in database at all")
+            else:
+                print(f"✅ Token valid for user: {current_user['username']} (ID: {current_user['id']})")
+            
+            cur.close()
+            conn.close()
+            
+            if not current_user:
+                return jsonify({"error": "User not found"}), 401
+            
+        except jwt.ExpiredSignatureError:
+            print("❌ Token validation failed: Token has expired")
+            return jsonify({"error": "Token has expired"}), 401
+        except jwt.InvalidTokenError as e:
+            print(f"❌ Token validation failed: Invalid token - {str(e)}")
+            return jsonify({"error": "Invalid token"}), 401
+        except Exception as e:
+            print(f"❌ Token validation failed: {str(e)}")
+            return jsonify({"error": str(e)}), 401
+        
+        return f(current_user, *args, **kwargs)
+    
+    return decorated
+
+
+# Store conversation histories per user (in production, use a database)
+# Format: {user_id: {conversation_id: conversation_data}}
+user_conversations = {}
+
+# Model configuration
+MODEL_NAME = "gemini-2.5-flash"
+generation_config = {
+    "temperature": 0.9,
+    "top_p": 0.95,
+    "top_k": 40,
+    "max_output_tokens": 8192,
+}
+
+safety_settings = [
+    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+]
+
+
+# ============= AUTHENTICATION ENDPOINTS =============
+
+@app.route('/auth/register', methods=['POST'])
+def register():
+    """Register a new user"""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['username', 'email', 'password']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({"error": f"{field} is required"}), 400
+        
+        username = data['username'].strip()
+        email = data['email'].lower().strip()  # Normalize email
+        password = data['password']
+        full_name = data.get('full_name', '').strip()
+        
+        # Validate email format
+        if '@' not in email:
+            return jsonify({"error": "Invalid email format"}), 400
+        
+        # Validate password strength
+        if len(password) < 6:
+            return jsonify({"error": "Password must be at least 6 characters"}), 400
+        
+        # Hash password
+        password_hash = generate_password_hash(password)
+        
+        print(f"🔐 Registering user: {username}, email: {email}")
+        print(f"🔑 Password length: {len(password)}")
+        print(f"🔑 Hash method: pbkdf2:sha256")
+        
+        # Insert user into database
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        try:
+            cur.execute(
+                """INSERT INTO users (username, email, password_hash, full_name) 
+                   VALUES (%s, %s, %s, %s) RETURNING id, username, email, full_name, created_at""",
+                (username, email, password_hash, full_name)
+            )
+            user = cur.fetchone()
+            conn.commit()
+            
+            print(f"✅ User registered successfully with ID: {user['id']}")
+            
+            # Verify user was saved
+            cur.execute("SELECT id, username, email FROM users WHERE email = %s", (email,))
+            saved_user = cur.fetchone()
+            if saved_user:
+                print(f"✅ Verified in DB: User {saved_user['username']} (ID: {saved_user['id']}) with email {saved_user['email']}")
+            else:
+                print(f"⚠️ WARNING: User not found in DB after insert!")
+            
+            # Generate JWT token
+            token = jwt.encode({
+                'user_id': user['id'],
+                'username': user['username'],
+                'exp': datetime.utcnow() + timedelta(hours=app.config['JWT_EXPIRATION_HOURS'])
+            }, app.config['JWT_SECRET_KEY'], algorithm="HS256")
+            
+            # Store session in database
+            expires_at = datetime.utcnow() + timedelta(hours=app.config['JWT_EXPIRATION_HOURS'])
+            cur.execute(
+                "INSERT INTO user_sessions (user_id, token, expires_at) VALUES (%s, %s, %s)",
+                (user['id'], token, expires_at)
+            )
+            conn.commit()
+            
+            cur.close()
+            conn.close()
+            
+            return jsonify({
+                "message": "User registered successfully",
+                "user": {
+                    "id": user['id'],
+                    "username": user['username'],
+                    "email": user['email'],
+                    "full_name": user['full_name'],
+                    "created_at": user['created_at'].isoformat() if user['created_at'] else None
+                },
+                "token": token
+            }), 201
+            
+        except psycopg2.IntegrityError as e:
+            conn.rollback()
+            cur.close()
+            conn.close()
+            if 'username' in str(e):
+                return jsonify({"error": "Username already exists"}), 409
+            elif 'email' in str(e):
+                return jsonify({"error": "Email already exists"}), 409
+            else:
+                return jsonify({"error": "User already exists"}), 409
+                
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/auth/login', methods=['POST'])
+def login():
+    """Login user"""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data or 'email' not in data or 'password' not in data:
+            return jsonify({"error": "Email and password are required"}), 400
+        
+        email = data['email'].lower().strip()  # Normalize email
+        password = data['password']
+        
+        print(f"🔍 Login attempt for email: {email}")
+        print(f"🔑 Password provided length: {len(password)}")
+        
+        # Get user from database
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM users WHERE LOWER(email) = %s AND is_active = TRUE", (email,))
+        user = cur.fetchone()
+        
+        if not user:
+            cur.close()
+            conn.close()
+            print(f"❌ Login failed: User not found with email {email}")
+            return jsonify({"error": "Invalid email or password"}), 401
+        
+        print(f"✅ User found: ID={user['id']}, username={user['username']}")
+        print(f"🔑 Stored hash starts with: {user['password_hash'][:30]}...")
+        
+        # Verify password
+        password_match = check_password_hash(user['password_hash'], password)
+        print(f"🔐 Password verification result: {password_match}")
+        
+        if not password_match:
+            cur.close()
+            conn.close()
+            print(f"❌ Login failed: Invalid password for user {email}")
+            return jsonify({"error": "Invalid email or password"}), 401
+        
+        # Update last login
+        cur.execute("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = %s", (user['id'],))
+        conn.commit()
+        
+        # Generate JWT token
+        token = jwt.encode({
+            'user_id': user['id'],
+            'username': user['username'],
+            'exp': datetime.utcnow() + timedelta(hours=app.config['JWT_EXPIRATION_HOURS'])
+        }, app.config['JWT_SECRET_KEY'], algorithm="HS256")
+        
+        # Store session in database
+        expires_at = datetime.utcnow() + timedelta(hours=app.config['JWT_EXPIRATION_HOURS'])
+        cur.execute(
+            "INSERT INTO user_sessions (user_id, token, expires_at) VALUES (%s, %s, %s)",
+            (user['id'], token, expires_at)
+        )
+        conn.commit()
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            "message": "Login successful",
+            "user": {
+                "id": user['id'],
+                "username": user['username'],
+                "email": user['email'],
+                "full_name": user['full_name'],
+                "last_login": user['last_login'].isoformat() if user['last_login'] else None
+            },
+            "token": token
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/auth/logout', methods=['POST'])
+@token_required
+def logout(current_user):
+    """Logout user and invalidate token"""
+    try:
+        # Get token from header
+        token = request.headers['Authorization'].split(" ")[1]
+        
+        # Invalidate session in database
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE user_sessions SET is_active = FALSE WHERE token = %s",
+            (token,)
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({"message": "Logout successful"})
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/auth/me', methods=['GET'])
+@token_required
+def get_current_user(current_user):
+    """Get current user information"""
+    try:
+        return jsonify({
+            "user": {
+                "id": current_user['id'],
+                "username": current_user['username'],
+                "email": current_user['email'],
+                "full_name": current_user['full_name'],
+                "created_at": current_user['created_at'].isoformat() if current_user['created_at'] else None,
+                "last_login": current_user['last_login'].isoformat() if current_user['last_login'] else None
+            }
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/auth/change-password', methods=['POST'])
+@token_required
+def change_password(current_user):
+    """Change user password"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'old_password' not in data or 'new_password' not in data:
+            return jsonify({"error": "Old password and new password are required"}), 400
+        
+        old_password = data['old_password']
+        new_password = data['new_password']
+        
+        # Verify old password
+        if not check_password_hash(current_user['password_hash'], old_password):
+            return jsonify({"error": "Invalid old password"}), 401
+        
+        # Validate new password strength
+        if len(new_password) < 6:
+            return jsonify({"error": "New password must be at least 6 characters"}), 400
+        
+        # Hash new password
+        new_password_hash = generate_password_hash(new_password)
+        
+        # Update password in database
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE users SET password_hash = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+            (new_password_hash, current_user['id'])
+        )
+        conn.commit()
+        
+        # Invalidate all existing sessions
+        cur.execute("UPDATE user_sessions SET is_active = FALSE WHERE user_id = %s", (current_user['id'],))
+        conn.commit()
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({"message": "Password changed successfully. Please login again."})
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ============= CHAT ENDPOINTS =============
+
+@app.route('/')
+def home():
+    """Home endpoint"""
+    return jsonify({
+        "message": "Welcome to CortexAI API",
+        "version": "2.0.0",
+        "model": MODEL_NAME,
+        "endpoints": {
+            "/auth/register": "POST - Register new user",
+            "/auth/login": "POST - Login user",
+            "/auth/logout": "POST - Logout user (Protected)",
+            "/auth/me": "GET - Get current user (Protected)",
+            "/auth/change-password": "POST - Change password (Protected)",
+            "/chat": "POST - Send a chat message (Protected)",
+            "/chat/stream": "POST - Stream chat responses (Protected)",
+            "/conversations": "GET - List all conversations (Protected)",
+            "/conversations/<id>": "GET - Get specific conversation (Protected)",
+            "/conversations/<id>": "DELETE - Delete a conversation (Protected)",
+            "/conversations/new": "POST - Start new conversation (Protected)",
+            "/models": "GET - List available models"
+        }
+
+    })
+
+
+@app.route('/chat', methods=['POST'])
+@token_required
+def chat(current_user):
+    """Handle chat requests without streaming"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'message' not in data:
+            return jsonify({"error": "Message is required"}), 400
+        
+        user_message = data['message']
+        conversation_id = data.get('conversation_id', str(uuid.uuid4()))
+        system_prompt = data.get('system_prompt', '')
+        
+        user_id = current_user['id']
+        
+        # Initialize user's conversations if not exists
+        if user_id not in user_conversations:
+            user_conversations[user_id] = {}
+        
+        # Get or create conversation history
+        if conversation_id not in user_conversations[user_id]:
+            user_conversations[user_id][conversation_id] = {
+                "id": conversation_id,
+                "created_at": datetime.now().isoformat(),
+                "messages": [],
+                "title": user_message[:50] + "..." if len(user_message) > 50 else user_message
+            }
+        
+        # Initialize the model
+        model = genai.GenerativeModel(
+            model_name=MODEL_NAME,
+            generation_config=generation_config,
+            safety_settings=safety_settings
+        )
+        
+        # Prepare conversation history for Gemini
+        chat_history = []
+        for msg in user_conversations[user_id][conversation_id]['messages']:
+            chat_history.append({
+                "role": msg['role'],
+                "parts": [msg['content']]
+            })
+        
+        # Start chat session
+        chat_session = model.start_chat(history=chat_history)
+        
+        # Add system prompt if provided
+        full_message = f"{system_prompt}\n\n{user_message}" if system_prompt else user_message
+        
+        # Send message and get response
+        response = chat_session.send_message(full_message)
+        assistant_message = response.text
+        
+        # Store messages in conversation history
+        user_conversations[user_id][conversation_id]['messages'].append({
+            "role": "user",
+            "content": user_message,
+            "timestamp": datetime.now().isoformat()
+        })
+        
+        user_conversations[user_id][conversation_id]['messages'].append({
+            "role": "model",
+            "content": assistant_message,
+            "timestamp": datetime.now().isoformat()
+        })
+        
+        return jsonify({
+            "conversation_id": conversation_id,
+            "message": assistant_message,
+            "timestamp": datetime.now().isoformat(),
+            "model": MODEL_NAME
+        })
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/chat/stream', methods=['POST'])
+@token_required
+def chat_stream(current_user):
+    """Handle chat requests with streaming responses"""
+    try:
+        print(f"📨 Chat stream request from user: {current_user['username']}")
+        data = request.get_json()
+        
+        if not data or 'message' not in data:
+            return jsonify({"error": "Message is required"}), 400
+        
+        user_message = data['message']
+        conversation_id = data.get('conversation_id', str(uuid.uuid4()))
+        system_prompt = data.get('system_prompt', '')
+        
+        user_id = current_user['id']
+        
+        print(f"💬 Message: {user_message[:50]}...")
+        print(f"🆔 Conversation ID: {conversation_id}")
+        
+        # Initialize user's conversations if not exists
+        if user_id not in user_conversations:
+            user_conversations[user_id] = {}
+        
+        # Get or create conversation history
+        if conversation_id not in user_conversations[user_id]:
+            print(f"✨ Creating new conversation: {conversation_id}")
+            user_conversations[user_id][conversation_id] = {
+                "id": conversation_id,
+                "created_at": datetime.now().isoformat(),
+                "messages": [],
+                "title": user_message[:50] + "..." if len(user_message) > 50 else user_message
+            }
+        
+        def generate():
+            try:
+                print(f"🤖 Initializing Gemini model: {MODEL_NAME}")
+                # Initialize the model
+                model = genai.GenerativeModel(
+                    model_name=MODEL_NAME,
+                    generation_config=generation_config,
+                    safety_settings=safety_settings
+                )
+                
+                # Prepare conversation history
+                chat_history = []
+                for msg in user_conversations[user_id][conversation_id]['messages']:
+                    chat_history.append({
+                        "role": msg['role'],
+                        "parts": [msg['content']]
+                    })
+                
+                print(f"📚 Chat history length: {len(chat_history)} messages")
+                
+                # Start chat session
+                chat_session = model.start_chat(history=chat_history)
+                
+                # Add system prompt if provided
+                full_message = f"{system_prompt}\n\n{user_message}" if system_prompt else user_message
+                
+                # Store user message
+                user_conversations[user_id][conversation_id]['messages'].append({
+                    "role": "user",
+                    "content": user_message,
+                    "timestamp": datetime.now().isoformat()
+                })
+                
+                # Send metadata first
+                yield f"data: {json.dumps({'type': 'start', 'conversation_id': conversation_id})}\n\n"
+                
+                print(f"🚀 Starting Gemini API stream...")
+                # Stream response
+                full_response = ""
+                response = chat_session.send_message(full_message, stream=True)
+                
+                chunk_count = 0
+                for chunk in response:
+                    if chunk.text:
+                        chunk_count += 1
+                        full_response += chunk.text
+                        yield f"data: {json.dumps({'type': 'content', 'content': chunk.text})}\n\n"
+                
+                print(f"✅ Stream complete: {chunk_count} chunks, {len(full_response)} chars")
+                
+                # Store assistant message
+                user_conversations[user_id][conversation_id]['messages'].append({
+                    "role": "model",
+                    "content": full_response,
+                    "timestamp": datetime.now().isoformat()
+                })
+                
+                # Send completion signal
+                yield f"data: {json.dumps({'type': 'end', 'full_response': full_response})}\n\n"
+                
+            except Exception as e:
+                print(f"❌ Stream error: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
+        
+        return Response(
+            stream_with_context(generate()),
+            mimetype='text/event-stream',
+            headers={
+                'Cache-Control': 'no-cache',
+                'X-Accel-Buffering': 'no'
+            }
+        )
+    
+    except Exception as e:
+        print(f"❌ Chat stream error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/conversations', methods=['GET'])
+@token_required
+def get_conversations(current_user):
+    """Get all conversations for current user"""
+    try:
+        user_id = current_user['id']
+        conversations_list = []
+        
+        if user_id in user_conversations:
+            for conv_id, conv_data in user_conversations[user_id].items():
+                conversations_list.append({
+                    "id": conv_id,
+                    "title": conv_data.get('title', 'Untitled'),
+                    "created_at": conv_data.get('created_at'),
+                    "message_count": len(conv_data.get('messages', []))
+                })
+        
+        # Sort by creation date (newest first)
+        conversations_list.sort(key=lambda x: x['created_at'], reverse=True)
+        
+        return jsonify({
+            "conversations": conversations_list,
+            "total": len(conversations_list)
+        })
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/conversations/<conversation_id>', methods=['GET'])
+@token_required
+def get_conversation(current_user, conversation_id):
+    """Get a specific conversation for current user"""
+    try:
+        user_id = current_user['id']
+        
+        if user_id not in user_conversations or conversation_id not in user_conversations[user_id]:
+            return jsonify({"error": "Conversation not found"}), 404
+        
+        return jsonify(user_conversations[user_id][conversation_id])
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/conversations/<conversation_id>', methods=['DELETE'])
+@token_required
+def delete_conversation(current_user, conversation_id):
+    """Delete a conversation for current user"""
+    try:
+        user_id = current_user['id']
+        
+        if user_id not in user_conversations or conversation_id not in user_conversations[user_id]:
+            return jsonify({"error": "Conversation not found"}), 404
+        
+        del user_conversations[user_id][conversation_id]
+        print(f"🗑️ Deleted conversation {conversation_id} for user {current_user['username']}")
+        
+        return jsonify({
+            "message": "Conversation deleted successfully",
+            "conversation_id": conversation_id
+        })
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/conversations/new', methods=['POST'])
+@token_required
+def new_conversation(current_user):
+    """Start a new conversation for current user"""
+    try:
+        user_id = current_user['id']
+        data = request.get_json() or {}
+        conversation_id = str(uuid.uuid4())
+        title = data.get('title', 'New Conversation')
+        
+        if user_id not in user_conversations:
+            user_conversations[user_id] = {}
+        
+        user_conversations[user_id][conversation_id] = {
+            "id": conversation_id,
+            "created_at": datetime.now().isoformat(),
+            "messages": [],
+            "title": title
+        }
+        
+        return jsonify({
+            "conversation_id": conversation_id,
+            "message": "New conversation created",
+            "created_at": user_conversations[user_id][conversation_id]['created_at']
+        })
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/conversations/<conversation_id>/clear', methods=['POST'])
+@token_required
+def clear_conversation(current_user, conversation_id):
+    """Clear conversation history for current user"""
+    try:
+        user_id = current_user['id']
+        
+        if user_id not in user_conversations or conversation_id not in user_conversations[user_id]:
+            return jsonify({"error": "Conversation not found"}), 404
+        
+        user_conversations[user_id][conversation_id]['messages'] = []
+        
+        return jsonify({
+            "message": "Conversation cleared successfully",
+            "conversation_id": conversation_id
+        })
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/models', methods=['GET'])
+def get_models():
+    """Get available models"""
+    try:
+        models = genai.list_models()
+        available_models = []
+        
+        for model in models:
+            if 'generateContent' in model.supported_generation_methods:
+                available_models.append({
+                    "name": model.name,
+                    "display_name": model.display_name,
+                    "description": model.description if hasattr(model, 'description') else "",
+                })
+        
+        return jsonify({
+            "models": available_models,
+            "current_model": MODEL_NAME
+        })
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    return jsonify({
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "api_configured": bool(GEMINI_API_KEY)
+    })
+
+
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({"error": "Endpoint not found"}), 404
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({"error": "Internal server error"}), 500
+
+
+if __name__ == '__main__':
+    # Initialize database
+    try:
+        init_db()
+    except Exception as e:
+        print(f"⚠️  Database initialization warning: {e}")
+    
+    port = int(os.getenv('PORT', 5000))
+    debug = os.getenv('DEBUG', 'True').lower() == 'true'
+    
+    print(f"""
+    ╔═══════════════════════════════════════╗
+    ║         CortexAI Backend v2.0         ║
+    ╚═══════════════════════════════════════╝
+    
+    🚀 Server running on http://localhost:{port}
+    🤖 Model: {MODEL_NAME}
+    🔧 Debug Mode: {debug}
+    🗄️  Database: PostgreSQL (Neon)
+    
+    Authentication Endpoints:
+    • POST   /auth/register         - Register new user
+    • POST   /auth/login            - Login user
+    • POST   /auth/logout           - Logout (Protected)
+    • GET    /auth/me               - Get current user (Protected)
+    • POST   /auth/change-password  - Change password (Protected)
+    
+    Chat Endpoints (All Protected):
+    • POST   /chat                  - Send chat message
+    • POST   /chat/stream           - Stream chat response
+    • GET    /conversations         - List conversations
+    • POST   /conversations/new     - Create conversation
+    • GET    /conversations/:id     - Get conversation
+    • DELETE /conversations/:id     - Delete conversation
+    • POST   /conversations/:id/clear - Clear conversation
+    • GET    /models                - List available models
+    • GET    /health                - Health check
+    
+    Press Ctrl+C to stop the server
+    """)
+    
+    app.run(host='0.0.0.0', port=port, debug=debug)
