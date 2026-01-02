@@ -196,6 +196,13 @@ export function ChatSidebar({
         )}
         style={isMobile ? { WebkitOverflowScrolling: 'touch' } : undefined}
       >
+        {/* Swipe hint for mobile */}
+        {isMobile && filteredConversations.length > 0 && (
+          <div className="px-3 py-2 mb-1 text-xs text-muted-foreground/70 text-center bg-sidebar-accent/30 rounded-lg">
+            Swipe left to delete
+          </div>
+        )}
+        
         {filteredConversations.length === 0 && searchQuery ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <Search className="w-8 h-8 text-muted-foreground/50 mb-2" />
