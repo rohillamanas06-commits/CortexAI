@@ -168,7 +168,7 @@ export function ChatSidebar({
       )}
 
       {/* New Chat Button */}
-      <div className="px-3 pb-3 shrink-0">
+      <div className="px-3 pb-3 pt-2 shrink-0">
         <Button
           onClick={() => {
             onNewConversation();
