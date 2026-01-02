@@ -120,12 +120,14 @@ export function ChatSidebar({
       )}>
         {isMobile ? (
           <>
-            <Logo size="sm" clickable showText />
+            <div className="flex items-center gap-3 flex-1">
+              <Logo size="sm" clickable showText />
+            </div>
             <Button
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="ml-auto text-sidebar-foreground hover:bg-sidebar-accent h-10 w-10"
+              className="text-sidebar-foreground hover:bg-sidebar-accent h-10 w-10 shrink-0"
             >
               <X className="w-5 h-5" />
             </Button>
