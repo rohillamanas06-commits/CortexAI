@@ -276,7 +276,7 @@ export default function Chat() {
       {/* Mobile Sidebar Overlay */}
       {mobileSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/90 backdrop-blur-lg z-40 md:hidden"
+          className="fixed inset-0 bg-black/90 backdrop-blur-lg z-[45] md:hidden"
           onClick={() => setMobileSidebarOpen(false)}
         />
       )}
@@ -284,7 +284,7 @@ export default function Chat() {
       {/* Mobile Sidebar */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 md:hidden transition-transform duration-300",
+          "fixed inset-y-0 left-0 z-[60] md:hidden transition-transform duration-300",
           mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
