@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Send, Loader2, Mic, MicOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -75,6 +75,7 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
     }
   }, [autoFocus]);
 
+  // Toggle speech recognition
   const toggleListening = useCallback(() => {
     if (!recognitionRef.current) {
       alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
@@ -102,37 +103,30 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
     }
   }, [message]);
 
-  const handleSubmit = () => {
-    if (!recognitionRef.current) {
-      alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
-      return;
-    }
-
-    if (isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    } else {
-      recognitionRef.current.start();
-      setIsListening(true);
-    }
-  };
-
-  // Auto-resize textarea
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      const maxHeight = window.innerWidth < 768 ? 100 : 200;
-      textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
-    }
-  }, [message]);
-
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!message.trim() || isLoading) return;
     onSend(message.trim());
     setMessage('');
-    if (texformRef}
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.focus();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
+  const handleFocus = () => setIsFocused(true);
+  const handleBlur = () => setIsFocused(false);
+
+  return (
+    <div
+      ref={formRef}
       className="border-t border-border bg-background sticky bottom-0 z-20"
     >
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-3 md:p-4 pb-4 md:pb-4">
@@ -141,7 +135,12 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
             "relative flex items-end gap-2 p-2 rounded-2xl bg-secondary/50 border transition-colors",
             isFocused ? "border-primary/50" : "border-border/50",
             isListening && "border-red-500/50"
-          )t.value)}
+          )}
+        >
+          <textarea
+            ref={textareaRef}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             onFocus={handleFocus}
             onBlur={handleBlur}
@@ -163,20 +162,7 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
           />
           
           {/* Action buttons */}
-          <div className="flex items-center gap-1 pb-1 md:pb-0">
-            {/* Voice input button */}
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"4 py-3 text-foreground placeholder:text-muted-foreground",
-              "focus:outline-none min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
-            )}
-            style={{ fontSize: '16px'     <MicOff className="w-5 h-5" />
-              ) : (
-                <Mic className="w-5 h-5" />
-              )}
-            </Button>
-<div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 pb-1 md:pb-0">
             <Button
               type="button"
               variant="ghost"
@@ -201,5 +187,15 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
                 !message.trim() && "opacity-50"
               )}
             >
-              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />        
-        <p className="hidden md:block text-xs text-muted-foreground/60 text-center mt-2
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+            </Button>
+          </div>
+        </div>
+        
+        <p className="hidden md:block text-xs text-muted-foreground/60 text-center mt-2">
+          Press Enter to send, Shift + Enter for new line
+        </p>
+      </form>
+    </div>
+  );
+}
