@@ -51,7 +51,7 @@ export function ChatSidebar({
     >
       {/* Header */}
       <div className={cn(
-        "flex items-center p-2 sm:p-4 border-b border-sidebar-border",
+        "flex items-center p-2 border-b border-sidebar-border shrink-0",
         isCollapsed ? "flex-col gap-3" : "justify-between"
       )}>
         <Logo size="sm" clickable showText={!isCollapsed} />
@@ -78,7 +78,7 @@ export function ChatSidebar({
       </div>
 
       {/* New Chat Button */}
-      <div className="p-2 sm:p-3">
+      <div className="p-2 shrink-0">
         <Button
           onClick={onNewConversation}
           variant="glass"
@@ -93,7 +93,7 @@ export function ChatSidebar({
       </div>
 
       {/* Conversations List */}
-      <div className="max-h-[35vh] sm:max-h-[50vh] overflow-y-auto scrollbar-thin px-2 sm:px-3 py-1 sm:py-2 space-y-1">
+      <div className="max-h-[30vh] overflow-y-auto scrollbar-thin px-2 py-1 space-y-1">
         {conversations.map((conv) => (
           <div
             key={conv.id}
@@ -135,7 +135,7 @@ export function ChatSidebar({
       <div className="flex-1 min-h-0" />
 
       {/* Footer */}
-      <div className="border-t border-sidebar-border p-2 sm:p-3 space-y-1.5 sm:space-y-2">
+      <div className="border-t border-sidebar-border p-2 space-y-1.5 shrink-0">
         {/* User info */}
         <div className={cn(
           "flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-sidebar-accent/50",

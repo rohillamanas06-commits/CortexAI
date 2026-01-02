@@ -261,7 +261,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="h-screen flex bg-background">
+    <div className={cn("h-screen flex bg-background", mobileSidebarOpen && "overflow-hidden")}>
       {/* Desktop Sidebar */}
       <div className="hidden md:block">
         <ChatSidebar
