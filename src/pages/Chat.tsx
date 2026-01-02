@@ -356,30 +356,26 @@ export default function Chat() {
       <main className="flex-1 flex flex-col min-w-0 h-full relative">
         {/* Mobile Header */}
         <header className={cn(
-          "md:hidden flex items-center gap-2 px-3 py-3 border-b border-border shrink-0",
+          "md:hidden flex items-center justify-between gap-3 px-4 py-4 border-b border-border shrink-0",
           "bg-background/95 backdrop-blur-xl sticky top-0 z-10",
           // Safe area for notched phones
-          "pt-safe-area-inset-top"
+          "pt-[calc(env(safe-area-inset-top)+0.75rem)]"
         )}>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setMobileSidebarOpen(true)}
-            className="h-10 w-10 shrink-0 touch-manipulation"
+            className="h-11 w-11 shrink-0 touch-manipulation"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-6 h-6" />
           </Button>
           
-          <div className="flex-1 min-w-0">
-            <h1 className="font-semibold truncate text-base">
-              {activeConversation?.title || 'New Chat'}
-            </h1>
-            {activeConversation && (
-              <p className="text-xs text-muted-foreground">
-                {activeConversation.messages.length} messages
-              </p>
-            )}
-          </div>
+          <h1 className="flex-1 text-center font-semibold truncate text-base px-2">
+            {activeConversation?.title || 'New Chat'}
+          </h1>
+          
+          {/* Spacer to balance layout */}
+          <div className="w-11 shrink-0" />
         </header>
 
         {/* Messages Area */}

@@ -324,9 +324,9 @@
 
 /* Mobile-specific styles */
 @media (max-width: 768px) {
-  /* Prevent overscroll bounce on iOS */
-  html {
-    overscroll-behavior: none;
+  /* Enable pull-to-refresh on mobile */
+  html, body {
+    overscroll-behavior-y: auto;
   }
 
   /* Better touch scrolling */

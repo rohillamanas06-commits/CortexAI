@@ -115,7 +115,7 @@ export function ChatSidebar({
       {/* Header */}
       <div className={cn(
         "flex items-center border-b border-sidebar-border shrink-0",
-        isMobile ? "p-4 gap-3" : "p-3",
+        isMobile ? "p-4 gap-3 pt-[calc(env(safe-area-inset-top)+1rem)]" : "p-3",
         !isMobile && isCollapsed ? "flex-col gap-3 py-4" : "justify-between"
       )}>
         {isMobile ? (
