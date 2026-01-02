@@ -37,11 +37,11 @@ export function EmptyChat({ onSuggestionClick }: EmptyChatProps) {
         <h2 className="text-3xl font-bold mb-3">
           How can I help you today?
         </h2>
-        <p className="text-muted-foreground text-lg mb-10">
+        <p className="text-muted-foreground text-lg md:mb-10">
           Start a conversation or try one of these suggestions
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 gap-3">
           {suggestions.map((suggestion, index) => (
             <button
               key={index}
