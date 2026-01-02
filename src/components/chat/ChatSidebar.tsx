@@ -101,13 +101,17 @@ export function ChatSidebar({
     <aside
       ref={sidebarRef}
       className={cn(
-        "h-full bg-sidebar flex flex-col transition-all duration-300 ease-out",
+        "bg-sidebar flex flex-col transition-all duration-300 ease-out",
         // Desktop styles
-        !isMobile && "border-r border-sidebar-border",
+        !isMobile && "h-full border-r border-sidebar-border",
         !isMobile && (isCollapsed ? "w-16" : "w-72"),
-        // Mobile styles - full screen drawer
-        isMobile && "w-full max-w-[320px] h-screen shadow-2xl"
+        // Mobile styles - full height drawer with proper overflow
+        isMobile && "w-full max-w-[320px] h-[100dvh] max-h-[100dvh] shadow-2xl"
       )}
+      style={isMobile ? { 
+        height: '100dvh',
+        maxHeight: '-webkit-fill-available'
+      } : undefined}
     >
       {/* Header */}
       <div className={cn(
@@ -184,18 +188,17 @@ export function ChatSidebar({
       </div>
 
       {/* Conversations List */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2 space-y-1 scrollbar-thin">
-        {filteredConversations.length === 0 ? (
+      <div 
+        className={cn(
+          "flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 py-2 space-y-1",
+          isMobile ? "scrollbar-none touch-pan-y" : "scrollbar-thin"
+        )}
+        style={isMobile ? { WebkitOverflowScrolling: 'touch' } : undefined}
+      >
+        {filteredConversations.length === 0 && searchQuery ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <MessageSquare className="w-10 h-10 text-muted-foreground/50 mb-3" />
-            <p className="text-sm text-muted-foreground">
-              {searchQuery ? 'No chats found' : 'No conversations yet'}
-            </p>
-            {!searchQuery && (
-              <p className="text-xs text-muted-foreground/70 mt-1">
-                Start a new chat to begin
-              </p>
-            )}
+            <Search className="w-8 h-8 text-muted-foreground/50 mb-2" />
+            <p className="text-sm text-muted-foreground">No chats found</p>
           </div>
         ) : (
           filteredConversations.map((conv) => (
@@ -270,8 +273,8 @@ export function ChatSidebar({
 
       {/* Footer */}
       <div className={cn(
-        "border-t border-sidebar-border p-3 space-y-2 shrink-0",
-        isMobile && "pb-safe-area-inset-bottom"
+        "border-t border-sidebar-border p-3 space-y-2 shrink-0 mt-auto",
+        isMobile && "pb-6"
       )}>
         {/* User info */}
         <div className={cn(
