@@ -300,7 +300,7 @@ export default function Chat() {
       </div>
 
       {/* Main Chat Area */}
-      <main className="flex-1 flex flex-col min-w-0 h-screen md:h-auto">
+      <main className="flex-1 flex flex-col min-w-0 h-screen md:h-auto relative z-0">
         {/* Mobile Header */}
         <header className="md:hidden flex items-center gap-4 p-4 border-b border-border shrink-0">
           <Button
