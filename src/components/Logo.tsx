@@ -32,13 +32,13 @@ export function Logo({ size = 'md', showText = true, className, clickable = fals
         {/* Main logo container */}
         <div className="relative w-full h-full rounded-xl bg-gradient-to-br from-primary to-accent p-[2px]">
           <div className="w-full h-full rounded-[10px] bg-background flex items-center justify-center">
-            {/* Sparkles/AI icon */}
+            {/* Brain/Neural icon */}
             <svg
               viewBox="0 0 24 24"
               fill="none"
               className="w-3/5 h-3/5"
               stroke="url(#logoGradient)"
-              strokeWidth="2"
+              strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
             >
@@ -48,8 +48,11 @@ export function Logo({ size = 'md', showText = true, className, clickable = fals
                   <stop offset="100%" stopColor="hsl(var(--accent))" />
                 </linearGradient>
               </defs>
-              <path d="M12 3l2 7h7l-5.5 4.5L18 22l-6-4.5L6 22l2.5-7.5L3 10h7z" fill="url(#logoGradient)" stroke="none" />
-              <circle cx="12" cy="12" r="1.5" fill="hsl(var(--background))" />
+              <path d="M12 2a4 4 0 0 1 4 4v1a3 3 0 0 1 3 3v1a3 3 0 0 1-1.5 2.6 3 3 0 0 1 .5 1.4v1a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4v-1a3 3 0 0 1 .5-1.4A3 3 0 0 1 5 11v-1a3 3 0 0 1 3-3V6a4 4 0 0 1 4-4z" />
+              <circle cx="9" cy="10" r="1" fill="hsl(var(--primary))" />
+              <circle cx="15" cy="10" r="1" fill="hsl(var(--accent))" />
+              <path d="M9 14h6" />
+              <path d="M12 6v4" />
             </svg>
           </div>
         </div>
