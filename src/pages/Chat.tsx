@@ -370,7 +370,7 @@ export default function Chat() {
             <Menu className="w-6 h-6" />
           </Button>
           
-          <h1 className="flex-1 text-center font-semibold truncate text-base px-2">
+          <h1 className="flex-1 text-left font-semibold truncate text-base">
             {activeConversation?.title || 'New Chat'}
           </h1>
           

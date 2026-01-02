@@ -53,7 +53,17 @@ export function EmptyChat({ onSuggestionClick }: EmptyChatProps) {
       <div className="text-center w-full max-w-2xl mx-auto">
         {/* Logo and Title */}
         <div className="animate-slide-up">
-          <Logo size="xl" showText={false} className="justify-center mb-4 md:mb-6" />
+          {/* Sparkles Icon */}
+          <div className="flex justify-center mb-4 md:mb-6">
+            <div className="relative w-16 h-16 md:w-20 md:h-20">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary to-accent opacity-50 blur-lg animate-pulse-glow" />
+              <div className="relative w-full h-full rounded-2xl bg-gradient-to-br from-primary to-accent p-[2px]">
+                <div className="w-full h-full rounded-[14px] bg-background flex items-center justify-center">
+                  <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-primary" />
+                </div>
+              </div>
+            </div>
+          </div>
           
           <h2 className="text-2xl md:text-3xl font-bold mb-2 md:mb-3">
             How can I help you today?
