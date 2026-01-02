@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Send, Loader2, Mic, MicOff, Image, X, Paperclip } from 'lucide-react';
+import { Send, Loader2, Mic, MicOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ChatInputProps {
@@ -60,27 +60,38 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
     };
   }, []);
 
-  // Handle mobile keyboard visibility
+  // Handle mobile keyboard visibility with throttling
   useEffect(() => {
+    let rafId: number;
+    let lastUpdate = 0;
+    const throttleMs = 100; // Throttle updates to 10fps max
+
     const handleResize = () => {
+      const now = Date.now();
+      if (now - lastUpdate < throttleMs) return;
+      lastUpdate = now;
+
       // Detect virtual keyboard on mobile
       if (window.visualViewport) {
-        const viewportHeight = window.visualViewport.height;
-        const windowHeight = window.innerHeight;
-        const diff = windowHeight - viewportHeight;
-        setKeyboardHeight(diff > 100 ? diff : 0);
+        rafId = requestAnimationFrame(() => {
+          const viewportHeight = window.visualViewport!.height;
+          const windowHeight = window.innerHeight;
+          const diff = windowHeight - viewportHeight;
+          setKeyboardHeight(diff > 100 ? diff : 0);
+        });
       }
     };
 
     if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleResize);
-      window.visualViewport.addEventListener('scroll', handleResize);
+      window.visualViewport.addEventListener('resize', handleResize, { passive: true });
     }
 
     return () => {
       if (window.visualViewport) {
         window.visualViewport.removeEventListener('resize', handleResize);
-        window.visualViewport.removeEventListener('scroll', handleResize);
+      }
+      if (rafId) {
+        cancelAnimationFrame(rafId);
       }
     };
   }, []);
@@ -92,7 +103,7 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
     }
   }, [autoFocus]);
 
-  const toggleListening = () => {
+  const toggleListening = useCallback(() => {
     if (!recognitionRef.current) {
       alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
       return;
@@ -105,19 +116,21 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
       recognitionRef.current.start();
       setIsListening(true);
     }
-  };
+  }, [isListening]);
 
-  // Auto-resize textarea
+  // Auto-resize textarea with RAF for better performance
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
-      textarea.style.height = 'auto';
-      const maxHeight = window.innerWidth < 768 ? 120 : 200; // Smaller max on mobile
-      textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
+      requestAnimationFrame(() => {
+        textarea.style.height = 'auto';
+        const maxHeight = window.innerWidth < 768 ? 120 : 200;
+        textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
+      });
     }
   }, [message]);
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = useCallback((e?: React.FormEvent) => {
     e?.preventDefault();
     if (!message.trim() || isLoading) return;
     onSend(message.trim());
@@ -126,51 +139,51 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
-  };
+  }, [message, isLoading, onSend]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     // On mobile, Enter should add a new line, not submit
     // On desktop, Enter submits, Shift+Enter adds a new line
     if (e.key === 'Enter' && !e.shiftKey && window.innerWidth >= 768) {
       e.preventDefault();
       handleSubmit();
     }
-  };
+  }, [handleSubmit]);
 
-  const handleFocus = () => {
+  const handleFocus = useCallback(() => {
     setIsFocused(true);
-    // Scroll to input on mobile when focused
-    setTimeout(() => {
-      containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }, 100);
-  };
+  }, []);
 
-  const handleBlur = () => {
+  const handleBlur = useCallback(() => {
     setIsFocused(false);
-  };
+  }, []);
 
   return (
     <div 
       ref={containerRef}
       className={cn(
-        "border-t border-border bg-background/95 backdrop-blur-xl shrink-0 transition-all duration-200",
+        "border-t border-border bg-background/95 shrink-0",
         // Safe area padding for mobile devices with notches
-        "pb-safe-area-inset-bottom"
+        "pb-4 md:pb-0"
       )}
       style={{
-        paddingBottom: keyboardHeight > 0 ? `${keyboardHeight}px` : undefined,
+        paddingBottom: keyboardHeight > 0 ? `${Math.max(keyboardHeight, 16)}px` : undefined,
+        transform: 'translateZ(0)', // Hardware acceleration
+        willChange: isFocused ? 'padding-bottom' : 'auto'
       }}
     >
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-3 md:p-4">
         <div 
           className={cn(
-            "relative flex items-end gap-1.5 md:gap-2 p-1.5 md:p-2 rounded-2xl md:rounded-2xl",
-            "bg-secondary/50 border transition-all duration-200",
+            "relative flex items-end gap-1.5 md:gap-2 p-2 rounded-2xl",
+            "bg-secondary/50 border",
             isFocused 
-              ? "border-primary/50 shadow-lg shadow-primary/5" 
+              ? "border-primary/50" 
               : "border-border/50",
-            isListening && "border-red-500/50"
+            isListening && "border-red-500/50",
+            "transition-colors duration-150" // Faster, simpler transition
           )}
+          style={{ transform: 'translateZ(0)' }}
         >
           <textarea
             ref={textareaRef}
@@ -206,8 +219,8 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
               onClick={toggleListening}
               disabled={isLoading}
               className={cn(
-                "shrink-0 h-10 w-10 md:h-11 md:w-11 rounded-xl touch-manipulation",
-                isListening && "text-red-500 bg-red-500/10 animate-pulse"
+                "shrink-0 h-11 w-11 rounded-xl touch-manipulation",
+                isListening && "text-red-500 bg-red-500/10"
               )}
               title={isListening ? "Stop recording" : "Start voice input"}
             >
@@ -225,9 +238,7 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
               size="icon"
               disabled={!message.trim() || isLoading}
               className={cn(
-                "shrink-0 h-10 w-10 md:h-11 md:w-11 rounded-xl touch-manipulation",
-                "transition-all duration-200",
-                message.trim() && !isLoading && "scale-100",
+                "shrink-0 h-11 w-11 rounded-xl touch-manipulation",
                 !message.trim() && "opacity-50"
               )}
             >
