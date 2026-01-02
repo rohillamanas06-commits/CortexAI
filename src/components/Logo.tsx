@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import { useId } from 'react';
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -9,11 +10,13 @@ interface LogoProps {
 }
 
 export function Logo({ size = 'md', showText = true, className, clickable = false }: LogoProps) {
+  const gradientId = useId();
+  
   const sizes = {
-    sm: 'w-6 h-6 md:w-8 md:h-8',
-    md: 'w-8 h-8 md:w-10 md:h-10',
-    lg: 'w-10 h-10 md:w-14 md:h-14',
-    xl: 'w-14 h-14 md:w-20 md:h-20',
+    sm: 'w-8 h-8 md:w-9 md:h-9',
+    md: 'w-10 h-10 md:w-12 md:h-12',
+    lg: 'w-12 h-12 md:w-16 md:h-16',
+    xl: 'w-16 h-16 md:w-20 md:h-20',
   };
 
   const textSizes = {
@@ -23,27 +26,48 @@ export function Logo({ size = 'md', showText = true, className, clickable = fals
     xl: 'text-3xl md:text-5xl',
   };
 
+  const borderRadius = {
+    sm: 'rounded-lg',
+    md: 'rounded-xl',
+    lg: 'rounded-xl',
+    xl: 'rounded-2xl',
+  };
+
+  const innerRadius = {
+    sm: 'rounded-[6px]',
+    md: 'rounded-[10px]',
+    lg: 'rounded-[10px]',
+    xl: 'rounded-[14px]',
+  };
+
+  const strokeWidth = {
+    sm: '1.8',
+    md: '1.5',
+    lg: '1.5',
+    xl: '1.5',
+  };
+
   const logoContent = (
     <>
       <div className={cn("relative", sizes[size])}>
         {/* Outer glow ring */}
-        <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary to-accent opacity-50 blur-lg animate-pulse-glow" />
+        <div className={cn("absolute inset-0 bg-gradient-to-br from-primary to-accent opacity-50 blur-lg animate-pulse-glow", borderRadius[size])} />
         
         {/* Main logo container */}
-        <div className="relative w-full h-full rounded-xl bg-gradient-to-br from-primary to-accent p-[2px]">
-          <div className="w-full h-full rounded-[10px] bg-background flex items-center justify-center">
+        <div className={cn("relative w-full h-full bg-gradient-to-br from-primary to-accent p-[2px]", borderRadius[size])}>
+          <div className={cn("w-full h-full bg-background flex items-center justify-center", innerRadius[size])}>
             {/* Brain/Neural icon */}
             <svg
               viewBox="0 0 24 24"
               fill="none"
               className="w-3/5 h-3/5"
-              stroke="url(#logoGradient)"
-              strokeWidth="1.5"
+              stroke={`url(#${gradientId})`}
+              strokeWidth={strokeWidth[size]}
               strokeLinecap="round"
               strokeLinejoin="round"
             >
               <defs>
-                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="hsl(var(--primary))" />
                   <stop offset="100%" stopColor="hsl(var(--accent))" />
                 </linearGradient>
