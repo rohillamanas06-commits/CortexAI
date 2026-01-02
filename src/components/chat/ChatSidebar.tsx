@@ -46,7 +46,7 @@ export function ChatSidebar({
     <aside
       className={cn(
         "h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300",
-        isCollapsed ? "w-16" : "w-72"
+        isCollapsed ? "w-16" : "w-full md:w-72"
       )}
     >
       {/* Header */}
