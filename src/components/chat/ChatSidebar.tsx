@@ -223,7 +223,7 @@ export function ChatSidebar({
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-foreground hover:bg-sidebar-accent/50 active:bg-sidebar-accent/70",
                   isCollapsed && !isMobile && "justify-center px-0",
-                  isMobile && "py-3.5" // Larger touch target on mobile
+                  isMobile && "py-4 gap-4 px-4" // Larger touch target and spacing on mobile
                 )}
                 style={{
                   transform: swipingId === conv.id ? `translateX(-${swipeOffset}px)` : 'translateX(0)',
@@ -235,20 +235,27 @@ export function ChatSidebar({
                 }}
               >
                 <div className={cn(
-                  "w-8 h-8 rounded-lg shrink-0 flex items-center justify-center",
+                  "rounded-xl shrink-0 flex items-center justify-center shadow-sm",
+                  isMobile ? "w-12 h-12" : "w-8 h-8 rounded-lg",
                   activeConversationId === conv.id
                     ? "bg-primary/20"
                     : "bg-sidebar-accent/50"
                 )}>
-                  <MessageSquare className="w-4 h-4" />
+                  <MessageSquare className={cn(isMobile ? "w-6 h-6" : "w-4 h-4")} />
                 </div>
                 {(!isCollapsed || isMobile) && (
                   <>
                     <div className="flex-1 min-w-0">
-                      <span className="block text-sm font-medium truncate">
+                      <span className={cn(
+                        "block font-semibold truncate",
+                        isMobile ? "text-base" : "text-sm font-medium"
+                      )}>
                         {conv.title}
                       </span>
-                      <span className="block text-xs text-muted-foreground mt-0.5">
+                      <span className={cn(
+                        "block text-muted-foreground mt-0.5",
+                        isMobile ? "text-sm" : "text-xs"
+                      )}>
                         {new Date(conv.createdAt).toLocaleDateString()}
                       </span>
                     </div>
