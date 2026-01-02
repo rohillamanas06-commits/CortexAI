@@ -1,0 +1,20 @@
+services:
+  # Flask Backend Service for CortexAI
+  - type: web
+    name: cortexai-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn Cortex:app --bind 0.0.0.0:$PORT --timeout 120 --workers 2
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_APP
+        value: Cortex.py
+      - key: PORT
+        value: 10000
+      - key: CORS_ORIGINS
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
