@@ -232,6 +232,31 @@
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground));
   }
+
+  /* Hide scrollbar utility */
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe area insets for notched phones */
+  .pt-safe-area-inset-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .pb-safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Touch manipulation for better mobile UX */
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 @keyframes float {
@@ -265,6 +290,15 @@
   to { opacity: 1; }
 }
 
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-25%);
+  }
+}
+
 /* Custom scrollbar for chat */
 .chat-scroll {
   overflow-y: auto;
@@ -286,4 +320,26 @@
 
 .chat-scroll::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+  /* Prevent overscroll bounce on iOS */
+  html {
+    overscroll-behavior: none;
+  }
+
+  /* Better touch scrolling */
+  .chat-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Hide scrollbars on mobile */
+  .chat-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chat-scroll {
+    scrollbar-width: none;
+  }
 }

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { ChatSidebar } from '@/components/chat/ChatSidebar';
@@ -6,7 +6,7 @@ import { ChatMessage } from '@/components/chat/ChatMessage';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { EmptyChat } from '@/components/chat/EmptyChat';
 import { Button } from '@/components/ui/button';
-import { Menu } from 'lucide-react';
+import { Menu, Plus, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { chatAPI, imageAPI } from '@/lib/api';
 
@@ -36,6 +36,8 @@ export default function Chat() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [conversationsLoaded, setConversationsLoaded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const touchStartRef = useRef<{ x: number; time: number } | null>(null);
 
   const activeConversation = conversations.find(c => c.id === activeConversationId);
 
@@ -44,23 +46,61 @@ export default function Chat() {
     localStorage.setItem('cortex-conversations', JSON.stringify(conversations));
   }, [conversations]);
 
-  // Don't load conversations from backend - they're stored locally
-  // Backend stores them in memory which gets lost on restart
-  // useEffect(() => {
-  //   if (isAuthenticated && !conversationsLoaded) {
-  //     loadConversations();
-  //   }
-  // }, [isAuthenticated, conversationsLoaded]);
+  // Handle swipe gesture to open sidebar on mobile
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    // Only track touches starting from the left edge
+    if (e.touches[0].clientX < 30) {
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        time: Date.now(),
+      };
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback((e: TouchEvent) => {
+    if (!touchStartRef.current) return;
+    
+    const deltaX = e.changedTouches[0].clientX - touchStartRef.current.x;
+    const deltaTime = Date.now() - touchStartRef.current.time;
+    
+    // Quick swipe from left edge
+    if (deltaX > 80 && deltaTime < 300) {
+      setMobileSidebarOpen(true);
+    }
+    
+    touchStartRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [handleTouchStart, handleTouchEnd]);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (mobileSidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileSidebarOpen]);
 
   const loadConversations = async () => {
     try {
       const backendConversations = await chatAPI.getConversations();
       
-      // Transform backend conversations to frontend format
       const transformedConversations: Conversation[] = backendConversations.map((conv) => ({
         id: conv.id,
         title: conv.title,
-        messages: [], // Messages will be loaded when conversation is selected
+        messages: [],
         createdAt: new Date(conv.created_at),
       }));
 
@@ -71,19 +111,16 @@ export default function Chat() {
     }
   };
 
-  // Load conversation messages when a conversation is selected
   const loadConversationMessages = async (conversationId: string) => {
     try {
       const conversation = await chatAPI.getConversation(conversationId);
       
-      // Transform messages from backend format
       const messages: Message[] = (conversation.messages || []).map((msg, index) => ({
         id: `${conversationId}-${index}`,
         role: msg.role === 'model' ? 'assistant' : msg.role as 'user' | 'assistant',
         content: msg.content,
       }));
 
-      // Update the conversation with loaded messages
       setConversations(prev =>
         prev.map(c =>
           c.id === conversationId
@@ -104,7 +141,12 @@ export default function Chat() {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center animate-pulse">
+            <Sparkles className="w-6 h-6 text-primary-foreground" />
+          </div>
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -122,7 +164,6 @@ export default function Chat() {
     setActiveConversationId(id);
     setMobileSidebarOpen(false);
     
-    // Load messages for this conversation if not already loaded
     const conversation = conversations.find(c => c.id === id);
     if (conversation && conversation.messages.length === 0) {
       loadConversationMessages(id);
@@ -131,22 +172,18 @@ export default function Chat() {
 
   const handleDeleteConversation = async (id: string) => {
     try {
-      // Only try to delete from backend if it's a UUID (backend conversation)
-      // Otherwise it's a local timestamp ID that only exists in frontend
       const isBackendConversation = id.includes('-');
       
       if (isBackendConversation) {
         await chatAPI.deleteConversation(id);
       }
       
-      // Always remove from local state
       setConversations(prev => prev.filter(c => c.id !== id));
       if (activeConversationId === id) {
         setActiveConversationId(null);
       }
     } catch (error) {
       console.error('Failed to delete conversation:', error);
-      // Still remove from local state even if backend delete fails
       setConversations(prev => prev.filter(c => c.id !== id));
       if (activeConversationId === id) {
         setActiveConversationId(null);
@@ -176,7 +213,6 @@ export default function Chat() {
 
       let conversationId = activeConversationId;
       
-      // Create new conversation if needed
       if (!conversationId) {
         conversationId = Date.now().toString();
         const newConversation: Conversation = {
@@ -259,9 +295,13 @@ export default function Chat() {
   };
 
   return (
-    <div className={cn("h-screen flex bg-background overflow-hidden", mobileSidebarOpen && "md:overflow-hidden")}>
+    <div className={cn(
+      "h-[100dvh] flex bg-background overflow-hidden",
+      // Use dynamic viewport height for mobile browsers
+      "supports-[height:100dvh]:h-[100dvh]"
+    )}>
       {/* Desktop Sidebar */}
-      <div className="hidden md:block">
+      <div className="hidden md:block h-full">
         <ChatSidebar
           conversations={conversations}
           activeConversationId={activeConversationId}
@@ -274,62 +314,100 @@ export default function Chat() {
       </div>
 
       {/* Mobile Sidebar Overlay */}
-      {mobileSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/90 backdrop-blur-lg z-[45] md:hidden"
-          onClick={() => setMobileSidebarOpen(false)}
-        />
-      )}
-
-      {/* Mobile Sidebar */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 right-0 z-[60] md:hidden transition-transform duration-300",
-          mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          "fixed inset-0 z-40 md:hidden transition-all duration-300",
+          mobileSidebarOpen 
+            ? "opacity-100 pointer-events-auto" 
+            : "opacity-0 pointer-events-none"
         )}
       >
-        <ChatSidebar
-          conversations={conversations}
-          activeConversationId={activeConversationId}
-          onSelectConversation={handleSelectConversation}
-          onNewConversation={handleNewConversation}
-          onDeleteConversation={handleDeleteConversation}
-          isCollapsed={false}
-          onToggleCollapse={() => setMobileSidebarOpen(false)}
+        {/* Backdrop */}
+        <div
+          className={cn(
+            "absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300",
+            mobileSidebarOpen ? "opacity-100" : "opacity-0"
+          )}
+          onClick={() => setMobileSidebarOpen(false)}
         />
+        
+        {/* Sidebar Panel */}
+        <div
+          className={cn(
+            "absolute inset-y-0 left-0 w-[85%] max-w-[320px] transition-transform duration-300 ease-out",
+            mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          )}
+        >
+          <ChatSidebar
+            conversations={conversations}
+            activeConversationId={activeConversationId}
+            onSelectConversation={handleSelectConversation}
+            onNewConversation={handleNewConversation}
+            onDeleteConversation={handleDeleteConversation}
+            isCollapsed={false}
+            onToggleCollapse={() => setMobileSidebarOpen(false)}
+            isMobile={true}
+            onClose={() => setMobileSidebarOpen(false)}
+          />
+        </div>
       </div>
 
       {/* Main Chat Area */}
-      <main className="flex-1 flex flex-col min-w-0 h-screen md:h-auto relative z-0">
+      <main className="flex-1 flex flex-col min-w-0 h-full relative">
         {/* Mobile Header */}
-        <header className="md:hidden flex items-center gap-4 p-4 border-b border-border shrink-0">
+        <header className={cn(
+          "md:hidden flex items-center gap-2 px-3 py-3 border-b border-border shrink-0",
+          "bg-background/95 backdrop-blur-xl sticky top-0 z-10",
+          // Safe area for notched phones
+          "pt-safe-area-inset-top"
+        )}>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setMobileSidebarOpen(true)}
+            className="h-10 w-10 shrink-0 touch-manipulation"
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <h1 className="font-semibold truncate">
-            {activeConversation?.title || 'New Chat'}
-          </h1>
+          
+          <div className="flex-1 min-w-0">
+            <h1 className="font-semibold truncate text-base">
+              {activeConversation?.title || 'New Chat'}
+            </h1>
+            {activeConversation && (
+              <p className="text-xs text-muted-foreground">
+                {activeConversation.messages.length} messages
+              </p>
+            )}
+          </div>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleNewConversation}
+            className="h-10 w-10 shrink-0 touch-manipulation"
+          >
+            <Plus className="w-5 h-5" />
+          </Button>
         </header>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto chat-scroll">
+        <div 
+          ref={messagesContainerRef}
+          className={cn(
+            "flex-1 overflow-y-auto overflow-x-hidden",
+            // Smooth scrolling
+            "scroll-smooth",
+            // Custom scrollbar
+            "scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
+          )}
+        >
           {!activeConversation?.messages.length ? (
             <div className="h-full flex flex-col">
               <EmptyChat onSuggestionClick={handleSendMessage} />
-              {/* Mobile Input in EmptyChat */}
-              <div className="md:hidden shrink-0">
-                <ChatInput 
-                  onSend={handleSendMessage} 
-                  isLoading={isLoading}
-                />
-              </div>
             </div>
           ) : (
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto pb-4">
               {activeConversation.messages.map((message) => (
                 <ChatMessage
                   key={message.id}
@@ -344,21 +422,31 @@ export default function Chat() {
                   isStreaming
                 />
               )}
-              <div ref={messagesEndRef} />
+              {isLoading && !streamingContent && (
+                <div className="flex gap-3 md:gap-4 px-3 md:px-4 py-4 md:py-6">
+                  <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary-foreground animate-pulse" />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <p className="text-sm font-semibold">Cortex</p>
+                    <div className="flex gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} className="h-4" />
             </div>
           )}
         </div>
 
-        {/* Input Area - Hidden on mobile when empty, always visible on desktop and when messages exist */}
-        <div className={cn(
-          "shrink-0",
-          !activeConversation?.messages.length && "hidden md:block"
-        )}>
-          <ChatInput 
-            onSend={handleSendMessage} 
-            isLoading={isLoading}
-          />
-        </div>
+        {/* Input Area - Always visible */}
+        <ChatInput 
+          onSend={handleSendMessage} 
+          isLoading={isLoading}
+        />
       </main>
     </div>
   );
