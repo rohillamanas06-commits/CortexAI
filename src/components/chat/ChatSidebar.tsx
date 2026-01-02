@@ -51,7 +51,7 @@ export function ChatSidebar({
     >
       {/* Header */}
       <div className={cn(
-        "flex items-center p-4 border-b border-sidebar-border",
+        "flex items-center p-3 md:p-4 border-b border-sidebar-border",
         isCollapsed ? "flex-col gap-3" : "justify-between"
       )}>
         <Logo size="sm" clickable showText={!isCollapsed} />

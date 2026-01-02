@@ -30,9 +30,9 @@ const suggestions = [
 
 export function EmptyChat({ onSuggestionClick }: EmptyChatProps) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-8">
+    <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8">
       <div className="text-center max-w-2xl mx-auto animate-slide-up">
-        <Logo size="xl" showText={false} className="justify-center mb-6" />
+        <Logo size="xl" showText={false} className="justify-center mb-4 md:mb-6" />
         
         <h2 className="text-3xl font-bold mb-3">
           How can I help you today?

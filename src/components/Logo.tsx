@@ -10,17 +10,17 @@ interface LogoProps {
 
 export function Logo({ size = 'md', showText = true, className, clickable = false }: LogoProps) {
   const sizes = {
-    sm: 'w-8 h-8',
-    md: 'w-10 h-10',
-    lg: 'w-14 h-14',
-    xl: 'w-20 h-20',
+    sm: 'w-6 h-6 md:w-8 md:h-8',
+    md: 'w-8 h-8 md:w-10 md:h-10',
+    lg: 'w-10 h-10 md:w-14 md:h-14',
+    xl: 'w-14 h-14 md:w-20 md:h-20',
   };
 
   const textSizes = {
-    sm: 'text-lg',
-    md: 'text-xl',
-    lg: 'text-3xl',
-    xl: 'text-5xl',
+    sm: 'text-base md:text-lg',
+    md: 'text-lg md:text-xl',
+    lg: 'text-2xl md:text-3xl',
+    xl: 'text-3xl md:text-5xl',
   };
 
   const logoContent = (
