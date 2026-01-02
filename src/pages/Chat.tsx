@@ -326,7 +326,7 @@ export default function Chat() {
         {/* Backdrop */}
         <div
           className={cn(
-            "absolute inset-0 bg-black/50 backdrop-blur-sm transition-all duration-200",
+            "absolute inset-0 bg-black/40 transition-opacity duration-200",
             mobileSidebarOpen ? "opacity-100" : "opacity-0"
           )}
           onClick={() => setMobileSidebarOpen(false)}
@@ -356,7 +356,10 @@ export default function Chat() {
       </div>
 
       {/* Main Chat Area */}
-      <main className="flex-1 flex flex-col min-w-0 h-full relative">
+      <main className={cn(
+        "flex-1 flex flex-col min-w-0 h-full relative transition-all duration-200",
+        mobileSidebarOpen && "md:blur-0 blur-sm"
+      )}>
         {/* Mobile Header */}
         <header className={cn(
           "md:hidden flex items-center justify-between gap-3 px-4 py-4 border-b border-border shrink-0",

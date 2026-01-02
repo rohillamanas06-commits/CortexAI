@@ -126,7 +126,7 @@ export function ChatSidebar({
         {isMobile ? (
           <>
             <div className="flex items-center gap-3 flex-1">
-              <Logo size="sm" clickable showText />
+              <Logo size="md" clickable showText />
             </div>
             <Button
               variant="ghost"
