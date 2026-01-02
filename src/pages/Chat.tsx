@@ -318,7 +318,16 @@ export default function Chat() {
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto chat-scroll">
           {!activeConversation?.messages.length ? (
-            <EmptyChat onSuggestionClick={handleSendMessage} />
+            <div className="h-full flex flex-col">
+              <EmptyChat onSuggestionClick={handleSendMessage} />
+              {/* Mobile Input in EmptyChat */}
+              <div className="md:hidden shrink-0">
+                <ChatInput 
+                  onSend={handleSendMessage} 
+                  isLoading={isLoading}
+                />
+              </div>
+            </div>
           ) : (
             <div className="max-w-4xl mx-auto">
               {activeConversation.messages.map((message) => (
@@ -340,11 +349,16 @@ export default function Chat() {
           )}
         </div>
 
-        {/* Input Area */}
-        <ChatInput 
-          onSend={handleSendMessage} 
-          isLoading={isLoading}
-        />
+        {/* Input Area - Hidden on mobile when empty, always visible on desktop and when messages exist */}
+        <div className={cn(
+          "shrink-0",
+          !activeConversation?.messages.length && "hidden md:block"
+        )}>
+          <ChatInput 
+            onSend={handleSendMessage} 
+            isLoading={isLoading}
+          />
+        </div>
       </main>
     </div>
   );
