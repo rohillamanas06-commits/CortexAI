@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, Mic, MicOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ChatInputProps {
@@ -11,7 +11,68 @@ interface ChatInputProps {
 
 export function ChatInput({ onSend, isLoading, placeholder = "Ask anything..." }: ChatInputProps) {
   const [message, setMessage] = useState('');
+  const [isListening, setIsListening] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const recognitionRef = useRef<any>(null);
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onresult = (event: any) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript + ' ';
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+
+        if (finalTranscript) {
+          setMessage((prev) => prev + finalTranscript);
+        }
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      recognitionRef.current.start();
+      setIsListening(true);
+    }
+  };
 
   // Auto-resize textarea
   useEffect(() => {
@@ -45,7 +106,7 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything..." }
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder}
+            placeholder={isListening ? "Listening..." : placeholder}
             rows={1}
             disabled={isLoading}
             className={cn(
@@ -54,6 +115,24 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything..." }
               "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
           />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={toggleListening}
+            disabled={isLoading}
+            className={cn(
+              "shrink-0 h-12 w-12 rounded-xl",
+              isListening && "text-red-500 animate-pulse"
+            )}
+            title={isListening ? "Stop recording" : "Start voice input"}
+          >
+            {isListening ? (
+              <MicOff className="w-5 h-5" />
+            ) : (
+              <Mic className="w-5 h-5" />
+            )}
+          </Button>
           <Button
             type="submit"
             variant="glow"
