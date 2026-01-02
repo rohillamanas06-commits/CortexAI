@@ -6,9 +6,7 @@ import { ChatMessage } from '@/components/chat/ChatMessage';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { EmptyChat } from '@/components/chat/EmptyChat';
 import { Button } from '@/components/ui/button';
-import { Logo } from '@/components/Logo';
-import { ThemeSwitcher } from '@/components/ThemeSwitcher';
-import { Menu, UserCircle, RefreshCw } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { chatAPI, imageAPI } from '@/lib/api';
 
@@ -261,7 +259,7 @@ export default function Chat() {
   };
 
   return (
-    <div className={cn("h-screen flex bg-background", mobileSidebarOpen && "overflow-hidden")}>
+    <div className="h-screen flex bg-background">
       {/* Desktop Sidebar */}
       <div className="hidden md:block">
         <ChatSidebar
@@ -304,35 +302,17 @@ export default function Chat() {
       {/* Main Chat Area */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Mobile Header */}
-        <header className="md:hidden flex items-center justify-between gap-3 px-3 py-2.5 border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-10">
+        <header className="md:hidden flex items-center gap-4 p-4 border-b border-border">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setMobileSidebarOpen(true)}
-            className="h-9 w-9"
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <h1 className="text-base font-semibold truncate flex-1 text-center">
-            {activeConversation?.title || 'CortexAI'}
+          <h1 className="font-semibold truncate">
+            {activeConversation?.title || 'New Chat'}
           </h1>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9"
-            >
-              <UserCircle className="w-5 h-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleNewConversation}
-              className="h-9 w-9"
-            >
-              <RefreshCw className="w-5 h-5" />
-            </Button>
-          </div>
         </header>
 
         {/* Messages Area */}
