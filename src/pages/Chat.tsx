@@ -304,7 +304,7 @@ export default function Chat() {
       {/* Main Chat Area */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Mobile Header */}
-        <header className="md:hidden flex items-center gap-2 px-2 py-2.5 border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-30">
+        <header className="md:hidden flex items-center gap-2 px-3 py-3 border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-30">
           <Button
             variant="ghost"
             size="icon"
@@ -313,12 +313,9 @@ export default function Chat() {
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <div className="flex-1 flex items-center justify-center overflow-hidden">
-            <Logo size="sm" showText={true} />
-          </div>
-          <div className="shrink-0">
-            <ThemeSwitcher />
-          </div>
+          <h1 className="flex-1 text-base font-semibold truncate">
+            {activeConversation?.title || 'New Chat'}
+          </h1>
         </header>
 
         {/* Messages Area */}
