@@ -207,6 +207,7 @@ export default function Chat() {
         content,
         conversationId,
         undefined,
+        undefined,
         (chunk: string) => {
           fullResponse += chunk;
           setStreamingContent(fullResponse);
@@ -340,7 +341,10 @@ export default function Chat() {
         </div>
 
         {/* Input Area */}
-        <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
+        <ChatInput 
+          onSend={handleSendMessage} 
+          isLoading={isLoading}
+        />
       </main>
     </div>
   );

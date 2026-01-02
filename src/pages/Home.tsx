@@ -63,79 +63,13 @@ export default function Home() {
             <Button
               variant="glass"
               size="xl"
-              onClick={() => navigate(isAuthenticated ? '/chat' : '/auth')}
+              onClick={() => navigate('/learn-more')}
             >
               Learn More
             </Button>
           </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-border py-6">
-        <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-          <Logo size="sm" />
-          <Dialog open={aboutOpen} onOpenChange={setAboutOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="gap-2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Info className="w-4 h-4" />
-                About Cortex
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-3 text-2xl">
-                  <Logo size="sm" showText={false} />
-                  Cortex AI
-                </DialogTitle>
-                <DialogDescription className="text-base pt-4 space-y-4">
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-2">About the Project</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      Cortex AI is an intelligent conversational assistant powered by Google's Gemini 2.5 Flash model. 
-                      Built with modern web technologies to provide a seamless, secure, and intuitive chat experience.
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-2">Key Features</h3>
-                    <ul className="text-muted-foreground space-y-2 list-none">
-                      <li className="flex items-start gap-2">
-                        <span className="text-primary mt-0.5">✓</span>
-                        <span>Real-time AI-powered conversations</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-primary mt-0.5">✓</span>
-                        <span>Voice input with speech recognition</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-primary mt-0.5">✓</span>
-                        <span>Text-to-speech for AI responses</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-primary mt-0.5">✓</span>
-                        <span>Multiple theme options</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-primary mt-0.5">✓</span>
-                        <span>Secure user authentication</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-primary mt-0.5">✓</span>
-                        <span>Conversation history management</span>
-                      </li>
-                    </ul>
-                  </div>
-                </DialogDescription>
-              </DialogHeader>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </footer>
     </div>
   );
 }

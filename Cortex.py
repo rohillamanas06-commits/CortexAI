@@ -603,11 +603,13 @@ def chat_stream(current_user):
         user_message = data['message']
         conversation_id = data.get('conversation_id', str(uuid.uuid4()))
         system_prompt = data.get('system_prompt', '')
+        model_name = data.get('model', MODEL_NAME)  # Allow custom model selection
         
         user_id = current_user['id']
         
         print(f"💬 Message: {user_message[:50]}...")
         print(f"🆔 Conversation ID: {conversation_id}")
+        print(f"🤖 Using model: {model_name}")
         
         # Initialize user's conversations if not exists
         if user_id not in user_conversations:
@@ -625,10 +627,10 @@ def chat_stream(current_user):
         
         def generate():
             try:
-                print(f"🤖 Initializing Gemini model: {MODEL_NAME}")
+                print(f"🤖 Initializing Gemini model: {model_name}")
                 # Initialize the model
                 model = genai.GenerativeModel(
-                    model_name=MODEL_NAME,
+                    model_name=model_name,
                     generation_config=generation_config,
                     safety_settings=safety_settings
                 )
