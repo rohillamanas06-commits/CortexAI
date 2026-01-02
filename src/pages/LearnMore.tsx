@@ -303,7 +303,7 @@ export default function LearnMore() {
                 <div className="text-center space-y-2">
                   <h3 className="text-2xl font-bold">Manas</h3>
                   <p className="text-lg text-primary">Founder and Developer</p>
-                  <p className="text-muted-foreground italic">
+                  <p className="text-muted-foreground font-sans text-base">
                     Dedicated to leveraging Artificial Intelligence to solve real-world problems.
                   </p>
                 </div>
