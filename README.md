@@ -80,17 +80,8 @@ CortexAI/
 └── vite.config.ts           # Vite configuration
 ```
 
-## 🎨 Features Breakdown
-
-### Pages
-- **Index** - Landing page with introduction
-- **Home** - Dashboard with navigation
-- **Chat** - Main AI chat interface with sidebar
-- **Auth** - Login and registration
-- **Forgot Password** - Password recovery
-- **Learn More** - Application information and features
-- **Not Found** - Custom 404 page
 
 
+```
 
 **Made with ❤️ by Manas Rohilla**
