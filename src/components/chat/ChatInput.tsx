@@ -147,7 +147,7 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything..." }
             )}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground text-center mt-3">
+        <p className="hidden md:block text-xs text-muted-foreground text-center mt-3">
           Cortex may produce inaccurate information. Always verify important details.
         </p>
       </form>
