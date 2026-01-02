@@ -140,7 +140,7 @@ export function ChatSidebar({
         <div className={cn(
           "flex items-center gap-3 px-3 py-2 rounded-lg bg-sidebar-accent/50",
           isCollapsed && "justify-center px-0"
-        )}>>
+        )}>
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
             <User className="w-4 h-4 text-primary-foreground" />
           </div>
