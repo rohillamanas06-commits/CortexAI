@@ -3,6 +3,7 @@ services:
   - type: web
     name: cortexai-backend
     runtime: python
+    runtimeVersion: "3.12"
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn Cortex:app --bind 0.0.0.0:$PORT --timeout 120 --workers 2
     envVars:
