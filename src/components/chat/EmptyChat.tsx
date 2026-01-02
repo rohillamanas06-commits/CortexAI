@@ -1,5 +1,5 @@
 import { Logo } from '@/components/Logo';
-import { Sparkles, Code, BookOpen, Lightbulb } from 'lucide-react';
+import { Sparkles, Code } from 'lucide-react';
 
 interface EmptyChatProps {
   onSuggestionClick: (suggestion: string) => void;
@@ -10,16 +10,6 @@ const suggestions = [
     icon: Code,
     title: "Write code",
     prompt: "Help me write a Python function to sort a list of objects by multiple properties",
-  },
-  {
-    icon: BookOpen,
-    title: "Explain concept",
-    prompt: "Explain quantum computing in simple terms",
-  },
-  {
-    icon: Lightbulb,
-    title: "Brainstorm ideas",
-    prompt: "Give me 5 creative startup ideas for the AI industry",
   },
   {
     icon: Sparkles,

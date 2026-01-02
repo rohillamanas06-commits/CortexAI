@@ -93,7 +93,7 @@ export function ChatSidebar({
       </div>
 
       {/* Conversations List */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin px-3 py-2 space-y-1">
+      <div className="max-h-[50vh] overflow-y-auto scrollbar-thin px-3 py-2 space-y-1">
         {conversations.map((conv) => (
           <div
             key={conv.id}
@@ -130,6 +130,9 @@ export function ChatSidebar({
           </div>
         ))}
       </div>
+
+      {/* Spacer to push footer down */}
+      <div className="flex-1 min-h-0" />
 
       {/* Footer */}
       <div className="border-t border-sidebar-border p-3 space-y-2">
