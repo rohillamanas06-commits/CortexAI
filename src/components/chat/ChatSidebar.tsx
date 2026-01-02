@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { Logo } from '@/components/Logo';
-import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
@@ -252,12 +251,6 @@ export function ChatSidebar({
                       )}>
                         {conv.title}
                       </span>
-                      <span className={cn(
-                        "block text-muted-foreground mt-0.5",
-                        isMobile ? "text-sm" : "text-xs"
-                      )}>
-                        {new Date(conv.createdAt).toLocaleDateString()}
-                      </span>
                     </div>
                     {!isMobile && (
                       <button
@@ -300,28 +293,22 @@ export function ChatSidebar({
           )}
         </div>
 
-        {/* Theme Switcher & Logout */}
-        <div className={cn(
-          "flex gap-2",
-          isCollapsed && !isMobile ? "flex-col items-center" : "items-center"
-        )}>
-          <ThemeSwitcher />
-          <Button
-            variant="ghost"
-            onClick={() => {
-              logout();
-              if (isMobile && onClose) onClose();
-            }}
-            className={cn(
-              "flex-1 justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10",
-              isCollapsed && !isMobile && "justify-center px-0 flex-initial w-10 h-10",
-              isMobile && "h-11"
-            )}
-          >
-            <LogOut className="w-4 h-4" />
-            {(!isCollapsed || isMobile) && <span>Sign Out</span>}
-          </Button>
-        </div>
+        {/* Logout */}
+        <Button
+          variant="ghost"
+          onClick={() => {
+            logout();
+            if (isMobile && onClose) onClose();
+          }}
+          className={cn(
+            "w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10",
+            isCollapsed && !isMobile && "justify-center px-0",
+            isMobile && "h-11"
+          )}
+        >
+          <LogOut className="w-4 h-4" />
+          {(!isCollapsed || isMobile) && <span>Sign Out</span>}
+        </Button>
       </div>
     </aside>
   );

@@ -380,15 +380,6 @@ export default function Chat() {
               </p>
             )}
           </div>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleNewConversation}
-            className="h-10 w-10 shrink-0 touch-manipulation"
-          >
-            <Plus className="w-5 h-5" />
-          </Button>
         </header>
 
         {/* Messages Area */}
