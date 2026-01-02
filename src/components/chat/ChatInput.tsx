@@ -102,7 +102,7 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
     }
   }, [message]);
 
-  const handleSubmit = use() => {
+  const handleSubmit = () => {
     if (!recognitionRef.current) {
       alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
       return;
