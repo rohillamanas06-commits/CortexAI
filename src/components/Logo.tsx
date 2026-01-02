@@ -17,10 +17,10 @@ export function Logo({ size = 'md', showText = true, className, clickable = fals
   };
 
   const textSizes = {
-    sm: 'text-lg',
-    md: 'text-xl',
-    lg: 'text-3xl',
-    xl: 'text-5xl',
+    sm: 'text-base sm:text-lg',
+    md: 'text-lg sm:text-xl',
+    lg: 'text-2xl sm:text-3xl',
+    xl: 'text-4xl sm:text-5xl',
   };
 
   const logoContent = (

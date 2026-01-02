@@ -6,6 +6,8 @@ import { ChatMessage } from '@/components/chat/ChatMessage';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { EmptyChat } from '@/components/chat/EmptyChat';
 import { Button } from '@/components/ui/button';
+import { Logo } from '@/components/Logo';
+import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { chatAPI, imageAPI } from '@/lib/api';
@@ -302,17 +304,17 @@ export default function Chat() {
       {/* Main Chat Area */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Mobile Header */}
-        <header className="md:hidden flex items-center gap-4 p-4 border-b border-border">
+        <header className="md:hidden flex items-center gap-3 px-3 py-3 border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-30">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setMobileSidebarOpen(true)}
+            className="shrink-0 h-9 w-9"
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <h1 className="font-semibold truncate">
-            {activeConversation?.title || 'New Chat'}
-          </h1>
+          <Logo size="sm" showText={true} className="flex-1 min-w-0" />
+          <ThemeSwitcher />
         </header>
 
         {/* Messages Area */}

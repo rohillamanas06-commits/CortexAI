@@ -95,30 +95,30 @@ export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
   return (
     <div
       className={cn(
-        "flex gap-4 px-4 py-6 animate-fade-in",
+        "flex gap-3 sm:gap-4 px-3 sm:px-4 md:px-6 py-4 sm:py-6 animate-fade-in",
         isUser ? "bg-transparent" : "bg-secondary/30"
       )}
     >
       {/* Avatar */}
       <div
         className={cn(
-          "w-8 h-8 rounded-lg shrink-0 flex items-center justify-center",
+          "w-7 h-7 sm:w-8 sm:h-8 rounded-lg shrink-0 flex items-center justify-center",
           isUser
             ? "bg-secondary"
             : "bg-gradient-to-br from-primary to-accent"
         )}
       >
         {isUser ? (
-          <User className="w-4 h-4 text-secondary-foreground" />
+          <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-secondary-foreground" />
         ) : (
-          <Sparkles className="w-4 h-4 text-primary-foreground" />
+          <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-foreground" />
         )}
       </div>
 
       {/* Message content */}
-      <div className="flex-1 min-w-0 space-y-2">
+      <div className="flex-1 min-w-0 space-y-2 text-sm sm:text-base">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-medium">
+          <p className="text-xs sm:text-sm font-medium">
             {isUser ? 'You' : 'Cortex'}
           </p>
           {!isUser && !isStreaming && (
@@ -127,16 +127,16 @@ export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
               size="icon"
               onClick={handleSpeak}
               className={cn(
-                "h-7 w-7",
+                "h-6 w-6 sm:h-7 sm:w-7",
                 isSpeaking && "text-primary"
               )}
               title={isSpeaking ? "Stop speaking" : "Read aloud"}
             >
-              <Volume2 className={cn("w-4 h-4", isSpeaking && "animate-pulse")} />
+              <Volume2 className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", isSpeaking && "animate-pulse")} />
             </Button>
           )}
         </div>
-        <div className="prose prose-invert max-w-none">
+        <div className="prose prose-sm sm:prose-base prose-invert max-w-none">
           {renderContent()}
         </div>
       </div>
