@@ -139,7 +139,7 @@ export function ChatSidebar({
           </>
         ) : (
           <>
-            <Logo size="sm" clickable showText={!isCollapsed} />
+            <Logo size="md" clickable showText={!isCollapsed} />
             <Button
               variant="ghost"
               size="icon"
