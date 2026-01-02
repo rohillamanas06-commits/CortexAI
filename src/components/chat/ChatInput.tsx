@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Send, Loader2, Mic, MicOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,10 +14,9 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
   const [message, setMessage] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -60,41 +59,14 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
     };
   }, []);
 
-  // Handle mobile keyboard visibility with throttling
+  // Scroll input into view when keyboard appears on mobile
   useEffect(() => {
-    let rafId: number;
-    let lastUpdate = 0;
-    const throttleMs = 100; // Throttle updates to 10fps max
-
-    const handleResize = () => {
-      const now = Date.now();
-      if (now - lastUpdate < throttleMs) return;
-      lastUpdate = now;
-
-      // Detect virtual keyboard on mobile
-      if (window.visualViewport) {
-        rafId = requestAnimationFrame(() => {
-          const viewportHeight = window.visualViewport!.height;
-          const windowHeight = window.innerHeight;
-          const diff = windowHeight - viewportHeight;
-          setKeyboardHeight(diff > 100 ? diff : 0);
-        });
-      }
-    };
-
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleResize, { passive: true });
+    if (isFocused && formRef.current) {
+      setTimeout(() => {
+        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 300);
     }
-
-    return () => {
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', handleResize);
-      }
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-      }
-    };
-  }, []);
+  }, [isFocused]);
 
   // Auto-focus on mount if requested
   useEffect(() => {
@@ -130,65 +102,46 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
     }
   }, [message]);
 
-  const handleSubmit = useCallback((e?: React.FormEvent) => {
+  const handleSubmit = use() => {
+    if (!recognitionRef.current) {
+      alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      recognitionRef.current.start();
+      setIsListening(true);
+    }
+  };
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      const maxHeight = window.innerWidth < 768 ? 100 : 200;
+      textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
+    }
+  }, [message]);
+
+  const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!message.trim() || isLoading) return;
     onSend(message.trim());
     setMessage('');
-    // Reset textarea height
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
-  }, [message, isLoading, onSend]);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    // On mobile, Enter should add a new line, not submit
-    // On desktop, Enter submits, Shift+Enter adds a new line
-    if (e.key === 'Enter' && !e.shiftKey && window.innerWidth >= 768) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  }, [handleSubmit]);
-
-  const handleFocus = useCallback(() => {
-    setIsFocused(true);
-  }, []);
-
-  const handleBlur = useCallback(() => {
-    setIsFocused(false);
-  }, []);
-
-  return (
-    <div 
-      ref={containerRef}
-      className={cn(
-        "border-t border-border bg-background/95 shrink-0",
-        // Safe area padding for mobile devices with notches
-        "pb-4 md:pb-0"
-      )}
-      style={{
-        paddingBottom: keyboardHeight > 0 ? `${Math.max(keyboardHeight, 16)}px` : undefined,
-        transform: 'translateZ(0)', // Hardware acceleration
-        willChange: isFocused ? 'padding-bottom' : 'auto'
-      }}
+    if (texformRef}
+      className="border-t border-border bg-background sticky bottom-0 z-20"
     >
-      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-3 md:p-4">
+      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-3 md:p-4 pb-4 md:pb-4">
         <div 
           className={cn(
-            "relative flex items-end gap-1.5 md:gap-2 p-2 rounded-2xl",
-            "bg-secondary/50 border",
-            isFocused 
-              ? "border-primary/50" 
-              : "border-border/50",
-            isListening && "border-red-500/50",
-            "transition-colors duration-150" // Faster, simpler transition
-          )}
-          style={{ transform: 'translateZ(0)' }}
-        >
-          <textarea
-            ref={textareaRef}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            "relative flex items-end gap-2 p-2 rounded-2xl bg-secondary/50 border transition-colors",
+            isFocused ? "border-primary/50" : "border-border/50",
+            isListening && "border-red-500/50"
+          )t.value)}
             onKeyDown={handleKeyDown}
             onFocus={handleFocus}
             onBlur={handleBlur}
@@ -215,52 +168,38 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
             <Button
               type="button"
               variant="ghost"
-              size="icon"
-              onClick={toggleListening}
-              disabled={isLoading}
-              className={cn(
-                "shrink-0 h-11 w-11 rounded-xl touch-manipulation",
-                isListening && "text-red-500 bg-red-500/10"
-              )}
-              title={isListening ? "Stop recording" : "Start voice input"}
-            >
-              {isListening ? (
-                <MicOff className="w-5 h-5" />
+              size="icon"4 py-3 text-foreground placeholder:text-muted-foreground",
+              "focus:outline-none min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+            )}
+            style={{ fontSize: '16px'     <MicOff className="w-5 h-5" />
               ) : (
                 <Mic className="w-5 h-5" />
               )}
             </Button>
+<div className="flex items-center gap-1.5">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={toggleListening}
+              disabled={isLoading}
+              className={cn(
+                "h-11 w-11 rounded-xl",
+                isListening && "text-red-500 bg-red-500/10"
+              )}
+            >
+              {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            </Button>
 
-            {/* Send button */}
             <Button
               type="submit"
               variant={message.trim() ? "glow" : "ghost"}
               size="icon"
               disabled={!message.trim() || isLoading}
               className={cn(
-                "shrink-0 h-11 w-11 rounded-xl touch-manipulation",
+                "h-11 w-11 rounded-xl",
                 !message.trim() && "opacity-50"
               )}
             >
-              {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Send className="w-5 h-5" />
-              )}
-            </Button>
-          </div>
-        </div>
-
-        {/* Mobile hint - tap send button */}
-        <p className="md:hidden text-[11px] text-muted-foreground/70 text-center mt-2">
-          Tap send or use voice input
-        </p>
-        
-        {/* Desktop hint */}
-        <p className="hidden md:block text-xs text-muted-foreground text-center mt-3">
-          Press Enter to send • Shift+Enter for new line
-        </p>
-      </form>
-    </div>
-  );
-}
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />        
+        <p className="hidden md:block text-xs text-muted-foreground/60 text-center mt-2
