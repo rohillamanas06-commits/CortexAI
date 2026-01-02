@@ -326,7 +326,7 @@ export default function Chat() {
         {/* Backdrop */}
         <div
           className={cn(
-            "absolute inset-0 bg-black/60 transition-opacity duration-200",
+            "absolute inset-0 bg-black/50 backdrop-blur-sm transition-all duration-200",
             mobileSidebarOpen ? "opacity-100" : "opacity-0"
           )}
           onClick={() => setMobileSidebarOpen(false)}
