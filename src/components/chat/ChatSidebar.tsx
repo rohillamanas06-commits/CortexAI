@@ -114,17 +114,15 @@ export function ChatSidebar({
                 <span className="flex-1 text-left text-sm truncate">
                   {conv.title}
                 </span>
-                {hoveredId === conv.id && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteConversation(conv.id);
-                    }}
-                    className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 hover:bg-destructive/20 rounded transition-all"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                  </button>
-                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteConversation(conv.id);
+                  }}
+                  className="md:opacity-0 md:group-hover:opacity-100 p-1 hover:bg-destructive/20 rounded transition-all"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                </button>
               </>
             )}
           </div>
