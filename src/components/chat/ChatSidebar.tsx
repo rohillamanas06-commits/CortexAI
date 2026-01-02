@@ -120,7 +120,7 @@ export function ChatSidebar({
                       e.stopPropagation();
                       onDeleteConversation(conv.id);
                     }}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive/20 rounded transition-all"
+                    className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 hover:bg-destructive/20 rounded transition-all"
                   >
                     <Trash2 className="w-3.5 h-3.5 text-destructive" />
                   </button>
