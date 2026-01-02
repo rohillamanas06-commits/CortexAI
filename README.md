@@ -84,4 +84,4 @@ CortexAI/
 
 ```
 
-**Made with ❤️ by Manas Rohilla**
+Made with ❤️ by Manas Rohilla
