@@ -257,6 +257,22 @@
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
+
+  /* Hardware acceleration utilities */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+
+  /* Optimize animations for mobile */
+  @media (max-width: 768px) {
+    .animate-slide-up,
+    .animate-fade-in,
+    .animate-pulse-glow {
+      animation-duration: 0.2s !important;
+    }
+  }
 }
 
 @keyframes float {
@@ -277,7 +293,7 @@
 @keyframes slide-up {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;

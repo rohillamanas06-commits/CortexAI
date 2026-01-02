@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Logo } from '@/components/Logo';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -50,21 +50,25 @@ export function ChatSidebar({
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  // Filter conversations based on search
-  const filteredConversations = conversations.filter(conv =>
-    conv.title.toLowerCase().includes(searchQuery.toLowerCase())
+  // Memoize filtered conversations for performance
+  const filteredConversations = useMemo(() => 
+    conversations.filter(conv =>
+      conv.title.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    [conversations, searchQuery]
   );
 
-  // Handle swipe to delete on mobile
-  const handleTouchStart = (e: React.TouchEvent, id: string) => {
+  // Optimize swipe handlers with useCallback
+  const handleTouchStart = useCallback((e: React.TouchEvent, id: string) => {
+    if (!isMobile) return;
     touchStartRef.current = {
       x: e.touches[0].clientX,
       y: e.touches[0].clientY,
     };
     setSwipingId(id);
-  };
+  }, [isMobile]);
 
-  const handleTouchMove = (e: React.TouchEvent) => {
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!touchStartRef.current || !swipingId) return;
     
     const deltaX = touchStartRef.current.x - e.touches[0].clientX;
@@ -74,16 +78,16 @@ export function ChatSidebar({
     if (deltaX > 10 && deltaY < 30) {
       setSwipeOffset(Math.min(Math.max(deltaX, 0), 80));
     }
-  };
+  }, [swipingId]);
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = useCallback(() => {
     if (swipeOffset > 60 && swipingId) {
       onDeleteConversation(swipingId);
     }
     setSwipeOffset(0);
     setSwipingId(null);
     touchStartRef.current = null;
-  };
+  }, [swipeOffset, swipingId, onDeleteConversation]);
 
   // Close sidebar on escape key
   useEffect(() => {
@@ -100,16 +104,17 @@ export function ChatSidebar({
     <aside
       ref={sidebarRef}
       className={cn(
-        "bg-sidebar flex flex-col transition-all duration-300 ease-out",
+        "bg-sidebar flex flex-col ease-out",
         // Desktop styles
-        !isMobile && "h-full border-r border-sidebar-border",
+        !isMobile && "h-full border-r border-sidebar-border transition-all duration-300",
         !isMobile && (isCollapsed ? "w-16" : "w-72"),
-        // Mobile styles - full height drawer with proper overflow
-        isMobile && "w-full max-w-[320px] h-[100dvh] max-h-[100dvh] shadow-2xl"
+        // Mobile styles - optimized for performance
+        isMobile && "w-full max-w-[320px] h-[100dvh] max-h-[100dvh] shadow-2xl will-change-transform"
       )}
       style={isMobile ? { 
         height: '100dvh',
-        maxHeight: '-webkit-fill-available'
+        maxHeight: '-webkit-fill-available',
+        transform: 'translateZ(0)' // Force hardware acceleration
       } : undefined}
     >
       {/* Header */}
@@ -226,16 +231,18 @@ export function ChatSidebar({
               
               <div
                 className={cn(
-                  "relative w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group cursor-pointer bg-sidebar",
+                  "relative w-full flex items-center gap-3 px-3 py-3 rounded-xl group cursor-pointer bg-sidebar",
                   activeConversationId === conv.id
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-foreground hover:bg-sidebar-accent/50 active:bg-sidebar-accent/70",
                   isCollapsed && !isMobile && "justify-center px-0",
-                  isMobile && "py-4 gap-4 px-4" // Larger touch target and spacing on mobile
+                  isMobile && "py-4 gap-4 px-4 transition-transform", // Simplified transition on mobile
+                  !isMobile && "transition-all duration-200" // Full transition only on desktop
                 )}
                 style={{
-                  transform: swipingId === conv.id ? `translateX(-${swipeOffset}px)` : 'translateX(0)',
+                  transform: swipingId === conv.id ? `translateX(-${swipeOffset}px) translateZ(0)` : 'translateX(0) translateZ(0)',
                   transition: swipingId === conv.id ? 'none' : 'transform 0.2s ease-out',
+                  willChange: swipingId === conv.id ? 'transform' : 'auto'
                 }}
                 onClick={() => {
                   onSelectConversation(conv.id);

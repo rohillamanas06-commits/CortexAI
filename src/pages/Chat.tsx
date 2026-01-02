@@ -316,27 +316,30 @@ export default function Chat() {
       {/* Mobile Sidebar Overlay */}
       <div
         className={cn(
-          "fixed inset-0 z-40 md:hidden transition-all duration-300",
+          "fixed inset-0 z-40 md:hidden",
           mobileSidebarOpen 
-            ? "opacity-100 pointer-events-auto" 
-            : "opacity-0 pointer-events-none"
+            ? "pointer-events-auto" 
+            : "pointer-events-none"
         )}
+        style={{ willChange: mobileSidebarOpen ? 'opacity' : 'auto' }}
       >
         {/* Backdrop */}
         <div
           className={cn(
-            "absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300",
+            "absolute inset-0 bg-black/60 transition-opacity duration-200",
             mobileSidebarOpen ? "opacity-100" : "opacity-0"
           )}
           onClick={() => setMobileSidebarOpen(false)}
+          style={{ transform: 'translateZ(0)' }}
         />
         
         {/* Sidebar Panel */}
         <div
           className={cn(
-            "absolute inset-y-0 left-0 w-[85%] max-w-[320px] transition-transform duration-300 ease-out",
+            "absolute inset-y-0 left-0 w-[85%] max-w-[320px] transition-transform duration-200 ease-out",
             mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
           )}
+          style={{ willChange: 'transform', transform: mobileSidebarOpen ? 'translateX(0) translateZ(0)' : 'translateX(-100%) translateZ(0)' }}
         >
           <ChatSidebar
             conversations={conversations}
@@ -382,12 +385,14 @@ export default function Chat() {
         <div 
           ref={messagesContainerRef}
           className={cn(
-            "flex-1 overflow-y-auto overflow-x-hidden",
-            // Smooth scrolling
-            "scroll-smooth",
+            "flex-1 overflow-y-auto overflow-x-hidden scroll-smooth",
             // Custom scrollbar
             "scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
           )}
+          style={{ 
+            transform: 'translateZ(0)',
+            WebkitOverflowScrolling: 'touch'
+          }}
         >
           {!activeConversation?.messages.length ? (
             <div className="h-full flex flex-col">
