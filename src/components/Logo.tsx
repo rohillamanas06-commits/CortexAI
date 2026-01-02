@@ -1,12 +1,14 @@
 import { cn } from '@/lib/utils';
+import { Link } from 'react-router-dom';
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showText?: boolean;
   className?: string;
+  clickable?: boolean;
 }
 
-export function Logo({ size = 'md', showText = true, className }: LogoProps) {
+export function Logo({ size = 'md', showText = true, className, clickable = false }: LogoProps) {
   const sizes = {
     sm: 'w-8 h-8',
     md: 'w-10 h-10',
@@ -21,8 +23,8 @@ export function Logo({ size = 'md', showText = true, className }: LogoProps) {
     xl: 'text-5xl',
   };
 
-  return (
-    <div className={cn("flex items-center gap-3", className)}>
+  const logoContent = (
+    <>
       <div className={cn("relative", sizes[size])}>
         {/* Outer glow ring */}
         <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary to-accent opacity-50 blur-lg animate-pulse-glow" />
@@ -64,6 +66,20 @@ export function Logo({ size = 'md', showText = true, className }: LogoProps) {
           Cortex
         </span>
       )}
+    </>
+  );
+
+  if (clickable) {
+    return (
+      <Link to="/" className={cn("flex items-center gap-3", className)}>
+        {logoContent}
+      </Link>
+    );
+  }
+
+  return (
+    <div className={cn("flex items-center gap-3", className)}>
+      {logoContent}
     </div>
   );
 }

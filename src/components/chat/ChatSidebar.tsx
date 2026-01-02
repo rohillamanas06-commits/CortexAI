@@ -52,17 +52,29 @@ export function ChatSidebar({
       {/* Header */}
       <div className={cn(
         "flex items-center p-4 border-b border-sidebar-border",
-        isCollapsed ? "justify-center" : "justify-between"
+        isCollapsed ? "flex-col gap-3" : "justify-between"
       )}>
-        {!isCollapsed && <Logo size="sm" />}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onToggleCollapse}
-          className="text-sidebar-foreground hover:bg-sidebar-accent"
-        >
-          <ChevronLeft className={cn("w-5 h-5 transition-transform", isCollapsed && "rotate-180")} />
-        </Button>
+        <Logo size="sm" clickable showText={!isCollapsed} />
+        {!isCollapsed && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleCollapse}
+            className="text-sidebar-foreground hover:bg-sidebar-accent"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
+        )}
+        {isCollapsed && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleCollapse}
+            className="text-sidebar-foreground hover:bg-sidebar-accent"
+          >
+            <ChevronLeft className="w-5 h-5 rotate-180" />
+          </Button>
+        )}
       </div>
 
       {/* New Chat Button */}
@@ -121,12 +133,6 @@ export function ChatSidebar({
 
       {/* Footer */}
       <div className="border-t border-sidebar-border p-3 space-y-2">
-        {!isCollapsed && (
-          <div className="flex items-center justify-center mb-3">
-            <ThemeSwitcher />
-          </div>
-        )}
-        
         {/* User info */}
         <div className={cn(
           "flex items-center gap-3 px-3 py-2 rounded-lg bg-sidebar-accent/50",

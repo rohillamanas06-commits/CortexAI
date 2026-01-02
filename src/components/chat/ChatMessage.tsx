@@ -1,5 +1,7 @@
 import { cn } from '@/lib/utils';
-import { User, Sparkles } from 'lucide-react';
+import { User, Sparkles, Volume2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useState } from 'react';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
@@ -9,6 +11,29 @@ interface ChatMessageProps {
 
 export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
   const isUser = role === 'user';
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const handleSpeak = () => {
+    if ('speechSynthesis' in window) {
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+      
+      if (!isSpeaking) {
+        const utterance = new SpeechSynthesisUtterance(content);
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        
+        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = () => setIsSpeaking(false);
+        
+        window.speechSynthesis.speak(utterance);
+      } else {
+        setIsSpeaking(false);
+      }
+    }
+  };
 
   return (
     <div
@@ -35,9 +60,25 @@ export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
 
       {/* Message content */}
       <div className="flex-1 min-w-0 space-y-2">
-        <p className="text-sm font-medium">
-          {isUser ? 'You' : 'Cortex'}
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium">
+            {isUser ? 'You' : 'Cortex'}
+          </p>
+          {!isUser && !isStreaming && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleSpeak}
+              className={cn(
+                "h-7 w-7",
+                isSpeaking && "text-primary"
+              )}
+              title={isSpeaking ? "Stop speaking" : "Read aloud"}
+            >
+              <Volume2 className={cn("w-4 h-4", isSpeaking && "animate-pulse")} />
+            </Button>
+          )}
+        </div>
         <div className="prose prose-invert max-w-none">
           <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
             {content}

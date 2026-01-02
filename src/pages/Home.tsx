@@ -39,20 +39,7 @@ export default function Home() {
       {/* Header */}
       <header className="relative z-10 flex items-center justify-between p-6">
         <Logo size="md" />
-        <div className="flex items-center gap-4">
-          <ThemeSwitcher />
-          {isAuthenticated ? (
-            <Button onClick={() => navigate('/chat')} variant="glow">
-              Open Chat
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-          ) : (
-            <Button onClick={() => navigate('/auth')} variant="glow">
-              Get Started
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
+        <ThemeSwitcher />
       </header>
 
       {/* Hero Section */}
