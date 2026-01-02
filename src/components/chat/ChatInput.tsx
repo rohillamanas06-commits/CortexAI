@@ -98,7 +98,7 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything..." }
   };
 
   return (
-    <div className="border-t border-border bg-background/80 backdrop-blur-xl p-4 sticky bottom-0">
+    <div className="border-t border-border bg-background/80 backdrop-blur-xl p-4 shrink-0">
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
         <div className="relative flex items-end gap-2 p-2 rounded-2xl glass border-primary/20 focus-within:border-primary/50 transition-colors">
           <textarea

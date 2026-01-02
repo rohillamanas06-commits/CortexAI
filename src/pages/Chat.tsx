@@ -259,7 +259,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="h-screen flex bg-background">
+    <div className="h-screen flex bg-background overflow-hidden">
       {/* Desktop Sidebar */}
       <div className="hidden md:block">
         <ChatSidebar
@@ -300,9 +300,9 @@ export default function Chat() {
       </div>
 
       {/* Main Chat Area */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 h-screen md:h-auto">
         {/* Mobile Header */}
-        <header className="md:hidden flex items-center gap-4 p-4 border-b border-border">
+        <header className="md:hidden flex items-center gap-4 p-4 border-b border-border shrink-0">
           <Button
             variant="ghost"
             size="icon"
