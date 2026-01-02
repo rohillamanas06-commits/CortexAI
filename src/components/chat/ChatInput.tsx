@@ -98,9 +98,9 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything..." }
   };
 
   return (
-    <div className="border-t border-border bg-background/80 backdrop-blur-xl p-3 sm:p-4">
+    <div className="border-t border-border bg-background/80 backdrop-blur-xl p-2 sm:p-4">
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-        <div className="relative flex items-end gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-2xl glass border-primary/20 focus-within:border-primary/50 transition-colors">
+        <div className="relative flex items-end gap-1 sm:gap-2 p-1 sm:p-2 rounded-2xl glass border-primary/20 focus-within:border-primary/50 transition-colors">
           <textarea
             ref={textareaRef}
             value={message}
@@ -110,8 +110,8 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything..." }
             rows={1}
             disabled={isLoading}
             className={cn(
-              "flex-1 resize-none bg-transparent px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base text-foreground placeholder:text-muted-foreground",
-              "focus:outline-none min-h-[44px] sm:min-h-[48px] max-h-[200px]",
+              "flex-1 resize-none bg-transparent px-2 sm:px-4 py-2 sm:py-3 text-sm sm:text-base text-foreground placeholder:text-muted-foreground",
+              "focus:outline-none min-h-[40px] sm:min-h-[48px] max-h-[200px]",
               "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
           />
@@ -122,7 +122,7 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything..." }
             onClick={toggleListening}
             disabled={isLoading}
             className={cn(
-              "shrink-0 h-10 w-10 sm:h-12 sm:w-12 rounded-xl",
+              "shrink-0 h-9 w-9 sm:h-12 sm:w-12 rounded-xl",
               isListening && "text-red-500 animate-pulse"
             )}
             title={isListening ? "Stop recording" : "Start voice input"}
@@ -138,7 +138,7 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything..." }
             variant="glow"
             size="icon"
             disabled={!message.trim() || isLoading}
-            className="shrink-0 h-10 w-10 sm:h-12 sm:w-12 rounded-xl"
+            className="shrink-0 h-9 w-9 sm:h-12 sm:w-12 rounded-xl"
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />

@@ -95,28 +95,28 @@ export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
   return (
     <div
       className={cn(
-        "flex gap-3 sm:gap-4 px-3 sm:px-4 md:px-6 py-4 sm:py-6 animate-fade-in",
+        "flex gap-2 sm:gap-4 px-2 sm:px-4 md:px-6 py-3 sm:py-6 animate-fade-in",
         isUser ? "bg-transparent" : "bg-secondary/30"
       )}
     >
       {/* Avatar */}
       <div
         className={cn(
-          "w-7 h-7 sm:w-8 sm:h-8 rounded-lg shrink-0 flex items-center justify-center",
+          "w-6 h-6 sm:w-8 sm:h-8 rounded-lg shrink-0 flex items-center justify-center",
           isUser
             ? "bg-secondary"
             : "bg-gradient-to-br from-primary to-accent"
         )}
       >
         {isUser ? (
-          <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-secondary-foreground" />
+          <User className="w-3 h-3 sm:w-4 sm:h-4 text-secondary-foreground" />
         ) : (
-          <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-foreground" />
+          <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-primary-foreground" />
         )}
       </div>
 
       {/* Message content */}
-      <div className="flex-1 min-w-0 space-y-2 text-sm sm:text-base">
+      <div className="flex-1 min-w-0 space-y-1 sm:space-y-2 text-sm sm:text-base">
         <div className="flex items-center justify-between">
           <p className="text-xs sm:text-sm font-medium">
             {isUser ? 'You' : 'Cortex'}
