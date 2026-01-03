@@ -1,10 +1,29 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Send, Loader2, Mic, MicOff, Plus, X } from 'lucide-react';
+import { Send, Loader2, Mic, MicOff, Plus, X, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+const AVAILABLE_MODELS = [
+  { value: 'gemini-3-flash-preview', label: 'Gemini 3 Flash (Preview)' },
+  { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro (Preview)' },
+  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+  { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite' },
+  { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+  { value: 'gemini-2.5-pro-preview-tts', label: 'Gemini 2.5 Pro (TTS)' },
+  { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+  { value: 'gemini-2.0-flash-exp-image-generation', label: 'Gemini 2.0 Flash (Image Gen)' },
+  { value: 'deep-research-pro-preview-12-2025', label: 'Deep Research Pro (Dec 2025)' },
+];
 
 interface ChatInputProps {
-  onSend: (message: string, image?: string) => void;
+  onSend: (message: string, image?: string, model?: string) => void;
   isLoading?: boolean;
   placeholder?: string;
   autoFocus?: boolean;
@@ -16,6 +35,7 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
   const [isFocused, setIsFocused] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [selectedModel, setSelectedModel] = useState(AVAILABLE_MODELS[0].value);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
   const formRef = useRef<HTMLDivElement>(null);
@@ -109,7 +129,7 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!message.trim() || isLoading) return;
-    onSend(message.trim(), selectedImage || undefined);
+    onSend(message.trim(), selectedImage || undefined, selectedModel);
     setMessage('');
     setSelectedImage(null);
     setImageFile(null);
@@ -155,6 +175,23 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
       className="border-t border-border bg-background sticky bottom-0 z-20"
     >
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-3 md:p-4 pb-4 md:pb-4">
+        {/* Model Selector */}
+        <div className="mb-2 flex items-center gap-2">
+          <Bot className="w-4 h-4 text-muted-foreground" />
+          <Select value={selectedModel} onValueChange={setSelectedModel}>
+            <SelectTrigger className="w-[220px] h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {AVAILABLE_MODELS.map((model) => (
+                <SelectItem key={model.value} value={model.value} className="text-xs">
+                  {model.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
         {/* Image Preview */}
         {selectedImage && (
           <div className="mb-2 relative inline-block">

@@ -107,7 +107,7 @@ export default function LearnMore() {
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             Cortex AI is your intelligent companion, designed to revolutionize the way you interact with artificial intelligence. 
-            Powered by Google's cutting-edge Gemini 2.5 Flash model, we bring you a seamless, intuitive, and powerful conversational experience.
+            Powered by Google's cutting-edge Gemini AI models (Gemini 3 Flash, Gemini 2.5 Flash, Pro, TTS, and more), we bring you a seamless, intuitive, and powerful conversational experience.
           </p>
         </div>
 
@@ -143,7 +143,7 @@ export default function LearnMore() {
                 <MessageSquare className="w-10 h-10 text-primary mb-2" />
                 <CardTitle>Intelligent Conversations</CardTitle>
                 <CardDescription>
-                  Powered by Google Gemini 2.5 Flash, experience AI that understands context, nuance, and maintains coherent long-form conversations.
+                  Powered by Google Gemini AI models (Gemini 3 Flash, 2.5 Flash, Pro, TTS, and more), experience AI that understands context, nuance, and maintains coherent long-form conversations.
                 </CardDescription>
               </CardHeader>
             </Card>

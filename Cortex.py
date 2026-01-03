@@ -220,7 +220,7 @@ def token_required(f):
 user_conversations = {}
 
 # Model configuration
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = "gemini-3-flash-preview"
 generation_config = {
     "temperature": 0.9,
     "top_p": 0.95,

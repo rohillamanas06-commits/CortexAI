@@ -204,7 +204,7 @@ export default function Chat() {
     return response;
   };
 
-  const handleSendMessage = async (content: string, image?: string) => {
+  const handleSendMessage = async (content: string, image?: string, model?: string) => {
     try {
       const userMessage: Message = {
         id: Date.now().toString(),
@@ -245,7 +245,7 @@ export default function Chat() {
         content,
         conversationId,
         undefined,
-        undefined,
+        model,
         image,
         (chunk: string) => {
           fullResponse += chunk;
