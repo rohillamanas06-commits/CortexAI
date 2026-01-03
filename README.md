@@ -8,7 +8,7 @@ CortexAI is a modern, responsive AI chat app with a sleek UI, secure auth, and F
 - 🤖 **AI Chat Interface** - Integrated AI chatbot with conversational abilities
 - 🔐 **User Authentication** - Secure login and registration system
 - 📱 **Fully Responsive** - Optimized for all devices and screen sizes
-- 🌓 **Dark/Light Theme** - Seamless theme switching with persistent preferences
+- 🌓 **Three Themes Available** - Seamless theme switching with persistent preferences
 - 💬 **Chat History** - Save and manage multiple chat conversations
 - 🎭 **Animated UI** - Smooth animations and interactive components
 
