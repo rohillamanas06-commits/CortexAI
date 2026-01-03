@@ -443,8 +443,44 @@ export default function LearnMore() {
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-border/50 py-8 mt-12">
-        <div className="container mx-auto px-4 text-center text-muted-foreground">
-          <Logo size="sm" />
+        <div className="container mx-auto px-4">
+          <div className="flex items-center gap-3">
+            {/* Cortex Logo Icon */}
+            <div className="relative w-12 h-12">
+              {/* Outer glow ring */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent opacity-50 blur-lg animate-pulse-glow rounded-xl" />
+              
+              {/* Main logo container */}
+              <div className="relative w-full h-full bg-gradient-to-br from-primary to-accent p-[2px] rounded-xl hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
+                <div className="w-full h-full bg-background flex items-center justify-center rounded-[10px]">
+                  {/* Brain/Neural icon */}
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    className="w-7 h-7"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <defs>
+                      <linearGradient id="footer-logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="hsl(var(--primary))" />
+                        <stop offset="100%" stopColor="hsl(var(--accent))" />
+                      </linearGradient>
+                    </defs>
+                    <g stroke="url(#footer-logo-gradient)">
+                      <path d="M12 2a4 4 0 0 1 4 4v1a3 3 0 0 1 3 3v1a3 3 0 0 1-1.5 2.6 3 3 0 0 1 .5 1.4v1a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4v-1a3 3 0 0 1 .5-1.4A3 3 0 0 1 5 11v-1a3 3 0 0 1 3-3V6a4 4 0 0 1 4-4z" />
+                      <circle cx="9" cy="10" r="1" fill="hsl(var(--primary))" />
+                      <circle cx="15" cy="10" r="1" fill="hsl(var(--accent))" />
+                      <path d="M9 14h6" />
+                      <path d="M12 6v4" />
+                    </g>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <span className="text-lg font-bold gradient-text">Cortex</span>
+          </div>
         </div>
       </footer>
     </div>
