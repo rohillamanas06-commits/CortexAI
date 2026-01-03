@@ -38,6 +38,9 @@ SENDGRID_FROM_EMAIL = os.getenv('SENDGRID_FROM_EMAIL')
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
 
+# Frontend URL Configuration
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+
 # Configure Gemini API
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 if not GEMINI_API_KEY:
@@ -574,7 +577,7 @@ def forgot_password():
         conn.close()
         
         # Send email via SendGrid
-        reset_link = f"http://localhost:5173/reset-password?token={reset_token}"
+        reset_link = f"{FRONTEND_URL}/reset-password?token={reset_token}"
         
         print(f"📧 Preparing to send email to: {email}")
         print(f"📧 From email: {SENDGRID_FROM_EMAIL}")
