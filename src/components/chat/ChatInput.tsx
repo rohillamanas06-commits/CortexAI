@@ -11,15 +11,16 @@ import {
 } from '@/components/ui/select';
 
 const AVAILABLE_MODELS = [
-  // Gemini Models
+  // Gemini Models - Latest & Most Powerful
   { value: 'gemini-3-flash-preview', label: 'Gemini 3 Flash (Preview)' },
   { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro (Preview)' },
+  { value: 'nano-banana-pro-preview', label: 'Nano Banana Pro' },
+  { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
   { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
   { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite' },
-  { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
-  { value: 'gemini-2.5-pro-preview-tts', label: 'Gemini 2.5 Pro (TTS)' },
   { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
   { value: 'gemini-2.0-flash-exp-image-generation', label: 'Gemini 2.0 Flash (Image Gen)' },
+  { value: 'deep-research-pro-preview-12-2025', label: 'Deep Research Pro (Dec 2025)' },
 ];
 
 interface ChatInputProps {
@@ -194,7 +195,7 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
               ))}
             </SelectContent>
           </Select>
-          {selectedModel === 'gemini-2.0-flash-exp-image-generation' && (
+          {(selectedModel === 'gemini-2.0-flash-exp-image-generation' || selectedModel === 'nano-banana-pro-preview') && (
             <span className="text-xs text-primary font-medium flex items-center gap-1">
               <Sparkles className="w-3 h-3" />
               Image Generation Enabled
