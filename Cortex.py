@@ -763,6 +763,11 @@ def chat_stream(current_user):
         def generate():
             try:
                 print(f"🤖 Initializing Gemini model: {captured_model_name}")
+                
+                # Only the experimental image generation model can generate images
+                is_image_capable = 'image-generation' in captured_model_name.lower()
+                print(f"🎨 Image generation capable: {is_image_capable}")
+                
                 # Initialize the model
                 model = genai.GenerativeModel(
                     model_name=captured_model_name,
@@ -783,8 +788,12 @@ def chat_stream(current_user):
                 # Start chat session
                 chat_session = model.start_chat(history=chat_history)
                 
-                # Add system prompt if provided
-                full_message = f"{captured_system_prompt}\n\n{captured_user_msg}" if captured_system_prompt else captured_user_msg
+                # Add system prompt for image generation models ONLY
+                if is_image_capable and any(keyword in captured_user_msg.lower() for keyword in ['generate', 'create', 'make', 'draw', 'image', 'picture', 'photo']):
+                    image_system_prompt = """You are an AI with native image generation capabilities. When the user asks you to generate, create, or make an image, you must DIRECTLY generate and output the image - do not describe it or return JSON. The image will be automatically displayed to the user."""
+                    full_message = f"{image_system_prompt}\n\n{captured_system_prompt}\n\n{captured_user_msg}" if captured_system_prompt else f"{image_system_prompt}\n\n{captured_user_msg}"
+                else:
+                    full_message = f"{captured_system_prompt}\n\n{captured_user_msg}" if captured_system_prompt else captured_user_msg
                 
                 # Store user message
                 user_conversations[user_id][captured_conv_id]['messages'].append({
@@ -799,6 +808,7 @@ def chat_stream(current_user):
                 print(f"🚀 Starting Gemini API stream...")
                 # Stream response with image if provided
                 full_response = ""
+                generated_images = []
                 
                 if captured_image:
                     # Process image from base64
@@ -824,22 +834,79 @@ def chat_stream(current_user):
                 
                 chunk_count = 0
                 for chunk in response:
+                    # Debug: Log chunk structure for image gen models
+                    if is_image_capable:
+                        print(f"🔍 Chunk attributes: {dir(chunk)}")
+                        if hasattr(chunk, 'candidates'):
+                            print(f"🔍 Has candidates: {len(chunk.candidates)}")
+                    
+                    # Handle text content
                     if chunk.text:
                         chunk_count += 1
                         full_response += chunk.text
                         yield f"data: {json.dumps({'type': 'content', 'content': chunk.text})}\n\n"
+                    
+                    # Handle generated images (for image generation models)
+                    if hasattr(chunk, 'candidates') and chunk.candidates:
+                        for candidate in chunk.candidates:
+                            if hasattr(candidate.content, 'parts'):
+                                for part in candidate.content.parts:
+                                    # Debug log part structure
+                                    if is_image_capable:
+                                        print(f"🔍 Part attributes: {dir(part)}")
+                                        print(f"🔍 Has inline_data: {hasattr(part, 'inline_data')}")
+                                        if hasattr(part, 'inline_data') and part.inline_data:
+                                            print(f"🔍 inline_data content: {part.inline_data}")
+                                            print(f"🔍 inline_data has data: {hasattr(part.inline_data, 'data')}")
+                                            if hasattr(part.inline_data, 'data'):
+                                                print(f"🔍 inline_data.data is not None: {part.inline_data.data is not None}")
+                                                if part.inline_data.data:
+                                                    print(f"🔍 inline_data.data length: {len(part.inline_data.data)}")
+                                    
+                                    # Check for inline data (images)
+                                    if (hasattr(part, 'inline_data') and 
+                                        part.inline_data and 
+                                        hasattr(part.inline_data, 'data') and 
+                                        part.inline_data.data):
+                                        try:
+                                            # Extract image data
+                                            image_data = part.inline_data.data
+                                            mime_type = part.inline_data.mime_type
+                                            
+                                            # Convert to base64 data URL
+                                            image_base64 = base64.b64encode(image_data).decode('utf-8')
+                                            image_url = f"data:{mime_type};base64,{image_base64}"
+                                            generated_images.append(image_url)
+                                            
+                                            print(f"🎨 Generated image found: {mime_type}, {len(image_data)} bytes")
+                                            
+                                            # Send image immediately
+                                            yield f"data: {json.dumps({'type': 'image', 'image': image_url})}\n\n"
+                                        except Exception as img_err:
+                                            print(f"⚠️ Error processing generated image: {str(img_err)}")
+                                            import traceback
+                                            traceback.print_exc()
                 
-                print(f"✅ Stream complete: {chunk_count} chunks, {len(full_response)} chars")
+                print(f"✅ Stream complete: {chunk_count} chunks, {len(full_response)} chars, {len(generated_images)} images")
+                
+                # If images were generated, add markdown references to the response (works for any model)
+                if generated_images:
+                    image_markdown = "\n\n"
+                    for i, img_url in enumerate(generated_images):
+                        image_markdown += f"![Generated Image {i+1}]({img_url})\n"
+                    full_response += image_markdown
+                    print(f"📝 Added {len(generated_images)} image(s) to response as markdown")
                 
                 # Store assistant message
                 user_conversations[user_id][captured_conv_id]['messages'].append({
                     "role": "model",
                     "content": full_response,
-                    "timestamp": datetime.now().isoformat()
+                    "timestamp": datetime.now().isoformat(),
+                    "images": generated_images if generated_images else None
                 })
                 
                 # Send completion signal
-                yield f"data: {json.dumps({'type': 'end', 'full_response': full_response})}\n\n"
+                yield f"data: {json.dumps({'type': 'end', 'full_response': full_response, 'images': generated_images})}\n\n"
                 
             except Exception as e:
                 print(f"❌ Stream error: {str(e)}")

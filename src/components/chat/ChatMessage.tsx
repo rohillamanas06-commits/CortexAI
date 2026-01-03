@@ -58,17 +58,23 @@ export function ChatMessage({ role, content, image, isStreaming }: ChatMessagePr
     const parts: JSX.Element[] = [];
     let lastIndex = 0;
     let match;
+    let imageIndex = 0;
 
     // If there's a direct image prop (user uploaded image), show it first
     if (image) {
       parts.push(
-        <img
-          key="uploaded-image"
-          src={image}
-          alt="Uploaded"
-          loading="lazy"
-          className="rounded-xl max-w-full md:max-w-[80%] h-auto my-3 md:my-4 border border-border shadow-sm"
-        />
+        <div key="uploaded-image" className="my-3 md:my-4">
+          <img
+            src={image}
+            alt="Uploaded"
+            loading="lazy"
+            onError={(e) => {
+              console.error('Failed to load uploaded image');
+              e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f0f0f0" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%23666"%3EImage failed to load%3C/text%3E%3C/svg%3E';
+            }}
+            className="rounded-xl max-w-full md:max-w-[80%] h-auto border border-border shadow-md hover:shadow-lg transition-shadow duration-200"
+          />
+        </div>
       );
     }
 
@@ -76,23 +82,39 @@ export function ChatMessage({ role, content, image, isStreaming }: ChatMessagePr
       // Add text before image
       if (match.index > lastIndex) {
         const text = content.slice(lastIndex, match.index);
-        parts.push(
-          <p key={`text-${lastIndex}`} className="text-foreground/90 leading-relaxed whitespace-pre-wrap break-words">
-            {text}
-          </p>
-        );
+        if (text.trim()) {
+          parts.push(
+            <p key={`text-${lastIndex}`} className="text-foreground/90 leading-relaxed whitespace-pre-wrap break-words">
+              {text}
+            </p>
+          );
+        }
       }
 
       // Add image
       const [, alt, src] = match;
+      imageIndex++;
       parts.push(
-        <img
-          key={`img-${match.index}`}
-          src={src}
-          alt={alt}
-          loading="lazy"
-          className="rounded-xl max-w-full md:max-w-[80%] h-auto my-3 md:my-4 border border-border shadow-sm"
-        />
+        <div key={`img-${match.index}`} className="my-3 md:my-4">
+          <img
+            src={src}
+            alt={alt || `Generated Image ${imageIndex}`}
+            loading="lazy"
+            onError={(e) => {
+              console.error('Failed to load generated image:', src.substring(0, 50));
+              e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f0f0f0" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%23666"%3EImage failed to load%3C/text%3E%3C/svg%3E';
+            }}
+            className="rounded-xl max-w-full md:max-w-[80%] h-auto border border-border shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+            onClick={(e) => {
+              // Open image in new tab on click
+              window.open(src, '_blank');
+            }}
+            title="Click to view full size"
+          />
+          {alt && (
+            <p className="text-sm text-muted-foreground mt-2 italic">{alt}</p>
+          )}
+        </div>
       );
 
       lastIndex = imageRegex.lastIndex;
@@ -101,14 +123,16 @@ export function ChatMessage({ role, content, image, isStreaming }: ChatMessagePr
     // Add remaining text
     if (lastIndex < content.length) {
       const text = content.slice(lastIndex);
-      parts.push(
-        <p key={`text-${lastIndex}`} className="text-foreground/90 leading-relaxed whitespace-pre-wrap break-words">
-          {text}
-          {isStreaming && (
-            <span className="inline-block w-2 h-5 ml-1 bg-primary animate-pulse rounded-sm" />
-          )}
-        </p>
-      );
+      if (text.trim() || isStreaming) {
+        parts.push(
+          <p key={`text-${lastIndex}`} className="text-foreground/90 leading-relaxed whitespace-pre-wrap break-words">
+            {text}
+            {isStreaming && (
+              <span className="inline-block w-2 h-5 ml-1 bg-primary animate-pulse rounded-sm" />
+            )}
+          </p>
+        );
+      }
     }
 
     // If only image with no text

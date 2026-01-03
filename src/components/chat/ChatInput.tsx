@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Send, Loader2, Mic, MicOff, Plus, X, Bot } from 'lucide-react';
+import { Send, Loader2, Mic, MicOff, Plus, X, Bot, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Select,
@@ -35,7 +35,7 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
   const [isFocused, setIsFocused] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [selectedModel, setSelectedModel] = useState(AVAILABLE_MODELS[0].value);
+  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
   const formRef = useRef<HTMLDivElement>(null);
@@ -133,6 +133,10 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
     setMessage('');
     setSelectedImage(null);
     setImageFile(null);
+    // Reset file input to allow uploading another image
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.focus();
@@ -190,6 +194,12 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
               ))}
             </SelectContent>
           </Select>
+          {selectedModel === 'gemini-2.0-flash-exp-image-generation' && (
+            <span className="text-xs text-primary font-medium flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              Image Generation Enabled
+            </span>
+          )}
         </div>
         
         {/* Image Preview */}
@@ -235,7 +245,8 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
             size="icon"
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
-            className="h-11 w-11 rounded-xl flex-shrink-0"
+            className="h-11 w-11 rounded-xl flex-shrink-0 hover:bg-primary/10 transition-colors"
+            title="Upload image"
           >
             <Plus className="w-5 h-5" />
           </Button>

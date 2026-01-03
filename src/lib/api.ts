@@ -140,6 +140,8 @@ export interface Message {
   role: 'user' | 'model' | 'assistant';
   content: string;
   timestamp: string;
+  image?: string;
+  images?: string[];
 }
 
 export interface Conversation {
@@ -261,6 +263,12 @@ export const chatAPI = {
                   if (jsonData.type === 'content') {
                     fullResponse += jsonData.content;
                     onChunk?.(jsonData.content);
+                  } else if (jsonData.type === 'image') {
+                    // Handle generated images - append as markdown
+                    const imageMarkdown = `\n\n![Generated Image](${jsonData.image})\n\n`;
+                    fullResponse += imageMarkdown;
+                    onChunk?.(imageMarkdown);
+                    console.log('🎨 Generated image received');
                   } else if (jsonData.type === 'end') {
                     clearTimeout(timeout);
                     console.log('✅ Stream completed successfully');
