@@ -53,7 +53,10 @@ export function EmptyChat({ onSuggestionClick }: EmptyChatProps) {
       <div className="text-center w-full max-w-2xl mx-auto">
         {/* Logo and Title */}
         <div className="animate-slide-up">
-          <Logo size="xl" showText={false} className="justify-center mb-4 md:mb-6" />
+          {/* Mobile: xl size */}
+          <Logo size="xl" showText={false} className="justify-center mb-4 md:mb-6 md:hidden" />
+          {/* Desktop: lg size */}
+          <Logo size="lg" showText={false} className="justify-center mb-4 md:mb-6 hidden md:flex" />
           
           <h2 className="text-2xl md:text-3xl font-bold mb-2 md:mb-3">
             How can I help you today?
