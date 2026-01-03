@@ -1,6 +1,9 @@
 import os
 import json
 import requests
+import base64
+from io import BytesIO
+from PIL import Image as PILImage
 from flask import Flask, request, jsonify, Response, stream_with_context, session
 from flask_cors import CORS
 import google.generativeai as genai
@@ -726,12 +729,15 @@ def chat_stream(current_user):
         conversation_id = data.get('conversation_id', str(uuid.uuid4()))
         system_prompt = data.get('system_prompt', '')
         model_name = data.get('model', MODEL_NAME)  # Allow custom model selection
+        image_base64 = data.get('image')  # Get base64 image data
         
         user_id = current_user['id']
         
         print(f"💬 Message: {user_message[:50]}...")
         print(f"🆔 Conversation ID: {conversation_id}")
         print(f"🤖 Using model: {model_name}")
+        if image_base64:
+            print(f"🖼️ Image data received: {len(image_base64)} chars")
         
         # Initialize user's conversations if not exists
         if user_id not in user_conversations:
@@ -747,19 +753,26 @@ def chat_stream(current_user):
                 "title": user_message[:50] + "..." if len(user_message) > 50 else user_message
             }
         
+        # Capture variables for closure
+        captured_image = image_base64
+        captured_user_msg = user_message
+        captured_system_prompt = system_prompt
+        captured_model_name = model_name
+        captured_conv_id = conversation_id
+        
         def generate():
             try:
-                print(f"🤖 Initializing Gemini model: {model_name}")
+                print(f"🤖 Initializing Gemini model: {captured_model_name}")
                 # Initialize the model
                 model = genai.GenerativeModel(
-                    model_name=model_name,
+                    model_name=captured_model_name,
                     generation_config=generation_config,
                     safety_settings=safety_settings
                 )
                 
                 # Prepare conversation history
                 chat_history = []
-                for msg in user_conversations[user_id][conversation_id]['messages']:
+                for msg in user_conversations[user_id][captured_conv_id]['messages']:
                     chat_history.append({
                         "role": msg['role'],
                         "parts": [msg['content']]
@@ -771,22 +784,43 @@ def chat_stream(current_user):
                 chat_session = model.start_chat(history=chat_history)
                 
                 # Add system prompt if provided
-                full_message = f"{system_prompt}\n\n{user_message}" if system_prompt else user_message
+                full_message = f"{captured_system_prompt}\n\n{captured_user_msg}" if captured_system_prompt else captured_user_msg
                 
                 # Store user message
-                user_conversations[user_id][conversation_id]['messages'].append({
+                user_conversations[user_id][captured_conv_id]['messages'].append({
                     "role": "user",
-                    "content": user_message,
+                    "content": captured_user_msg,
                     "timestamp": datetime.now().isoformat()
                 })
                 
                 # Send metadata first
-                yield f"data: {json.dumps({'type': 'start', 'conversation_id': conversation_id})}\n\n"
+                yield f"data: {json.dumps({'type': 'start', 'conversation_id': captured_conv_id})}\n\n"
                 
                 print(f"🚀 Starting Gemini API stream...")
-                # Stream response
+                # Stream response with image if provided
                 full_response = ""
-                response = chat_session.send_message(full_message, stream=True)
+                
+                if captured_image:
+                    # Process image from base64
+                    try:
+                        # Remove data URL prefix if present
+                        image_data_str = captured_image
+                        if ',' in image_data_str:
+                            image_data_str = image_data_str.split(',')[1]
+                        
+                        # Decode base64 image
+                        image_bytes = base64.b64decode(image_data_str)
+                        image = PILImage.open(BytesIO(image_bytes))
+                        
+                        print(f"🖼️ Image processed: {image.format}, {image.size}")
+                        
+                        # Send message with image
+                        response = chat_session.send_message([full_message, image], stream=True)
+                    except Exception as img_error:
+                        print(f"❌ Image processing error: {str(img_error)}")
+                        response = chat_session.send_message(full_message, stream=True)
+                else:
+                    response = chat_session.send_message(full_message, stream=True)
                 
                 chunk_count = 0
                 for chunk in response:
@@ -798,7 +832,7 @@ def chat_stream(current_user):
                 print(f"✅ Stream complete: {chunk_count} chunks, {len(full_response)} chars")
                 
                 # Store assistant message
-                user_conversations[user_id][conversation_id]['messages'].append({
+                user_conversations[user_id][captured_conv_id]['messages'].append({
                     "role": "model",
                     "content": full_response,
                     "timestamp": datetime.now().isoformat()

@@ -14,6 +14,7 @@ interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  image?: string;
 }
 
 interface Conversation {
@@ -203,12 +204,13 @@ export default function Chat() {
     return response;
   };
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, image?: string) => {
     try {
       const userMessage: Message = {
         id: Date.now().toString(),
         role: 'user',
         content,
+        image: image,
       };
 
       let conversationId = activeConversationId;
@@ -244,6 +246,7 @@ export default function Chat() {
         conversationId,
         undefined,
         undefined,
+        image,
         (chunk: string) => {
           fullResponse += chunk;
           setStreamingContent(fullResponse);
@@ -408,6 +411,7 @@ export default function Chat() {
                   key={message.id}
                   role={message.role}
                   content={message.content}
+                  image={message.image}
                 />
               ))}
               {isLoading && streamingContent && (

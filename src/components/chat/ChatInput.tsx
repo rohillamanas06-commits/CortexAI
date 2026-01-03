@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Send, Loader2, Mic, MicOff } from 'lucide-react';
+import { Send, Loader2, Mic, MicOff, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ChatInputProps {
-  onSend: (message: string) => void;
+  onSend: (message: string, image?: string) => void;
   isLoading?: boolean;
   placeholder?: string;
   autoFocus?: boolean;
@@ -14,9 +14,12 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
   const [message, setMessage] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
   const formRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -106,11 +109,33 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!message.trim() || isLoading) return;
-    onSend(message.trim());
+    onSend(message.trim(), selectedImage || undefined);
     setMessage('');
+    setSelectedImage(null);
+    setImageFile(null);
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.focus();
+    }
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImageFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -130,6 +155,26 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
       className="border-t border-border bg-background sticky bottom-0 z-20"
     >
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-3 md:p-4 pb-4 md:pb-4">
+        {/* Image Preview */}
+        {selectedImage && (
+          <div className="mb-2 relative inline-block">
+            <img 
+              src={selectedImage} 
+              alt="Upload preview" 
+              className="max-h-32 rounded-lg border border-border"
+            />
+            <Button
+              type="button"
+              variant="destructive"
+              size="icon"
+              onClick={removeImage}
+              className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
+        
         <div 
           className={cn(
             "relative flex items-end gap-2 p-2 rounded-2xl bg-secondary/50 border transition-colors",
@@ -137,6 +182,27 @@ export function ChatInput({ onSend, isLoading, placeholder = "Ask anything...", 
             isListening && "border-red-500/50"
           )}
         >
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImageSelect}
+            className="hidden"
+          />
+          
+          {/* Image upload button */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading}
+            className="h-11 w-11 rounded-xl flex-shrink-0"
+          >
+            <Plus className="w-5 h-5" />
+          </Button>
+          
           <textarea
             ref={textareaRef}
             value={message}

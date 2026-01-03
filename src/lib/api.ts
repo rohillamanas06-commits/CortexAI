@@ -186,6 +186,7 @@ export const chatAPI = {
     conversationId?: string,
     systemPrompt?: string,
     model?: string,
+    image?: string,
     onChunk?: (chunk: string) => void,
     onComplete?: (fullResponse: string) => void,
     onError?: (error: string) => void
@@ -215,6 +216,7 @@ export const chatAPI = {
           conversation_id: conversationId,
           system_prompt: systemPrompt,
           model: model,
+          image: image,
         }),
       })
         .then(async (response) => {

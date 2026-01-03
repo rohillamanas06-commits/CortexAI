@@ -6,10 +6,11 @@ import { useState, useRef } from 'react';
 interface ChatMessageProps {
   role: 'user' | 'assistant';
   content: string;
+  image?: string;
   isStreaming?: boolean;
 }
 
-export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
+export function ChatMessage({ role, content, image, isStreaming }: ChatMessageProps) {
   const isUser = role === 'user';
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -58,6 +59,19 @@ export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
     let lastIndex = 0;
     let match;
 
+    // If there's a direct image prop (user uploaded image), show it first
+    if (image) {
+      parts.push(
+        <img
+          key="uploaded-image"
+          src={image}
+          alt="Uploaded"
+          loading="lazy"
+          className="rounded-xl max-w-full md:max-w-[80%] h-auto my-3 md:my-4 border border-border shadow-sm"
+        />
+      );
+    }
+
     while ((match = imageRegex.exec(content)) !== null) {
       // Add text before image
       if (match.index > lastIndex) {
@@ -95,6 +109,11 @@ export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
           )}
         </p>
       );
+    }
+
+    // If only image with no text
+    if (parts.length === 1 && image && !content.trim()) {
+      return parts;
     }
 
     return parts.length > 0 ? parts : (
