@@ -17,6 +17,8 @@ import jwt
 from functools import wraps
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 # Load environment variables
 load_dotenv()
@@ -31,6 +33,10 @@ CORS(app, supports_credentials=True)  # Enable CORS for all routes with credenti
 # SendGrid Configuration
 SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
 SENDGRID_FROM_EMAIL = os.getenv('SENDGRID_FROM_EMAIL')
+
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
 
 # Configure Gemini API
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
@@ -417,6 +423,117 @@ def login():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/auth/google', methods=['POST'])
+def google_login():
+    """Login or register user with Google OAuth"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'credential' not in data:
+            return jsonify({"error": "Google credential is required"}), 400
+        
+        credential = data['credential']
+        
+        print(f"🔍 Google OAuth login attempt")
+        
+        # Get user info from Google using the access token
+        try:
+            google_user_info_url = "https://www.googleapis.com/oauth2/v3/userinfo"
+            headers = {'Authorization': f'Bearer {credential}'}
+            response = requests.get(google_user_info_url, headers=headers)
+            
+            if response.status_code != 200:
+                return jsonify({"error": "Invalid Google token"}), 401
+            
+            user_info = response.json()
+            email = user_info.get('email', '').lower().strip()
+            full_name = user_info.get('name', '')
+            
+            if not email:
+                return jsonify({"error": "Email not provided by Google"}), 400
+            
+            print(f"✅ Google user info retrieved: {email}")
+            
+        except Exception as e:
+            print(f"❌ Error verifying Google token: {e}")
+            return jsonify({"error": "Failed to verify Google token"}), 401
+        
+        # Check if user exists
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM users WHERE LOWER(email) = %s", (email,))
+        user = cur.fetchone()
+        
+        if not user:
+            # Create new user with Google info
+            # Generate username from email
+            username = email.split('@')[0]
+            # Ensure unique username
+            base_username = username
+            counter = 1
+            while True:
+                cur.execute("SELECT id FROM users WHERE username = %s", (username,))
+                if not cur.fetchone():
+                    break
+                username = f"{base_username}{counter}"
+                counter += 1
+            
+            # Create random password (user won't need it for Google login)
+            random_password = str(uuid.uuid4())
+            password_hash = generate_password_hash(random_password)
+            
+            print(f"🆕 Creating new user from Google: {username}, {email}")
+            
+            cur.execute(
+                """INSERT INTO users (username, email, password_hash, full_name) 
+                   VALUES (%s, %s, %s, %s) RETURNING id, username, email, full_name, created_at""",
+                (username, email, password_hash, full_name)
+            )
+            user = cur.fetchone()
+            conn.commit()
+            
+            print(f"✅ New user created with ID: {user['id']}")
+        else:
+            print(f"✅ Existing user found: ID={user['id']}, username={user['username']}")
+            
+            # Update last login
+            cur.execute("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = %s", (user['id'],))
+            conn.commit()
+        
+        # Generate JWT token
+        token = jwt.encode({
+            'user_id': user['id'],
+            'username': user['username'],
+            'exp': datetime.utcnow() + timedelta(hours=app.config['JWT_EXPIRATION_HOURS'])
+        }, app.config['JWT_SECRET_KEY'], algorithm="HS256")
+        
+        # Store session in database
+        expires_at = datetime.utcnow() + timedelta(hours=app.config['JWT_EXPIRATION_HOURS'])
+        cur.execute(
+            "INSERT INTO user_sessions (user_id, token, expires_at) VALUES (%s, %s, %s)",
+            (user['id'], token, expires_at)
+        )
+        conn.commit()
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            "message": "Login successful",
+            "user": {
+                "id": user['id'],
+                "username": user['username'],
+                "email": user['email'],
+                "full_name": user['full_name']
+            },
+            "token": token
+        })
+        
+    except Exception as e:
+        print(f"❌ Google login error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/auth/forgot-password', methods=['POST'])
 def forgot_password():
     """Send password reset email"""
@@ -620,6 +737,7 @@ def home():
         "endpoints": {
             "/auth/register": "POST - Register new user",
             "/auth/login": "POST - Login user",
+            "/auth/google": "POST - Login/Register with Google OAuth",
             "/auth/logout": "POST - Logout user (Protected)",
             "/auth/me": "GET - Get current user (Protected)",
             "/auth/change-password": "POST - Change password (Protected)",
@@ -1164,6 +1282,7 @@ if __name__ == '__main__':
     Authentication Endpoints:
     • POST   /auth/register         - Register new user
     • POST   /auth/login            - Login user
+    • POST   /auth/google           - Login/Register with Google OAuth
     • POST   /auth/logout           - Logout (Protected)
     • GET    /auth/me               - Get current user (Protected)
     • POST   /auth/change-password  - Change password (Protected)

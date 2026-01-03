@@ -46,6 +46,12 @@ export interface User {
   last_login?: string;
 }
 
+export interface GoogleAuthResponse {
+  message: string;
+  token: string;
+  user: User;
+}
+
 export interface AuthResponse {
   message: string;
   user: User;
@@ -90,6 +96,22 @@ export const authAPI = {
 
     if (!response.ok) {
       throw new Error(data.error || 'Login failed');
+    }
+
+    return data;
+  },
+
+  async googleLogin(credential: string): Promise<GoogleAuthResponse> {
+    const response = await fetch(`${API_BASE_URL}/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Google login failed');
     }
 
     return data;
