@@ -6,6 +6,7 @@ import { AnimatedBackground } from '@/components/AnimatedBackground';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Mail, CheckCircle, Loader2 } from 'lucide-react';
+import { authAPI } from '@/lib/api';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -19,18 +20,7 @@ export default function ForgotPassword() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to send reset email');
-      }
-
+      await authAPI.forgotPassword(email);
       setSuccess(true);
     } catch (err) {
       if (err instanceof Error) {
