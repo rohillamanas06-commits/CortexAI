@@ -638,6 +638,75 @@ def forgot_password():
         return jsonify({"error": "An error occurred. Please try again later."}), 500
 
 
+@app.route('/auth/reset-password', methods=['POST'])
+def reset_password():
+    """Reset user password with token"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'token' not in data or 'new_password' not in data:
+            return jsonify({"error": "Token and new password are required"}), 400
+        
+        token = data['token']
+        new_password = data['new_password']
+        
+        if len(new_password) < 8:
+            return jsonify({"error": "Password must be at least 8 characters long"}), 400
+        
+        try:
+            payload = jwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
+            
+            if payload.get('purpose') != 'password_reset':
+                return jsonify({"error": "Invalid token"}), 400
+            
+            user_id = payload.get('user_id')
+            
+        except jwt.ExpiredSignatureError:
+            return jsonify({"error": "Reset token has expired. Please request a new one."}), 400
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Invalid reset token"}), 400
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT reset_token, reset_token_expires FROM users WHERE id = %s AND is_active = TRUE",
+            (user_id,)
+        )
+        user_data = cur.fetchone()
+        
+        if not user_data:
+            cur.close()
+            conn.close()
+            return jsonify({"error": "User not found"}), 404
+        
+        if user_data['reset_token'] != token:
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Invalid or already used reset token"}), 400
+        
+        if user_data['reset_token_expires'] < datetime.utcnow():
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Reset token has expired"}), 400
+        
+        hashed_password = generate_password_hash(new_password)
+        cur.execute(
+            "UPDATE users SET password = %s, reset_token = NULL, reset_token_expires = NULL WHERE id = %s",
+            (hashed_password, user_id)
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        print(f"✅ Password reset successful for user ID: {user_id}")
+        
+        return jsonify({"message": "Password has been reset successfully"}), 200
+        
+    except Exception as e:
+        print(f"❌ Reset password error: {str(e)}")
+        return jsonify({"error": "An error occurred. Please try again later."}), 500
+
+
 @app.route('/auth/logout', methods=['POST'])
 @token_required
 def logout(current_user):
