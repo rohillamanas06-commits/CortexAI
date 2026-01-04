@@ -193,7 +193,7 @@ export default function LearnMore() {
                 <Moon className="w-10 h-10 text-primary mb-2" />
                 <CardTitle>Beautiful Themes</CardTitle>
                 <CardDescription>
-                  Choose from multiple elegant themes including light, dark, and custom options that suit your style and reduce eye strain.
+                  Choose from multiple elegant themes that suit your style and reduce eye strain.
                 </CardDescription>
               </CardHeader>
             </Card>
